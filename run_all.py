@@ -4,8 +4,10 @@ Run local projections for White (2022).
 Steps:
   1) Place IPUMS CPS extract CSV (see build_employment_from_ipums.py) or existing
      `data/employment_monthly.csv` with columns from that module.
-  2) Romer–Romer shocks: auto-download to `data/rr_shock_monthly.csv` when possible,
-     else provide the file manually.
+  2) Romer–Romer shocks: place `data/RR_MPshocks_Updated(GBforecasts).csv`
+     from Yuriy Gorodnichenko's Berkeley page. The loader uses MTGDATE and
+     the final CSV column, sums shocks by month, and fills no-meeting months
+     with zero.
   3) python run_all.py
 
 Outputs IRF plots and FEV table under `output/`.
@@ -24,7 +26,7 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from config import DATA_DIR, END_DATE, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
+from config import DATA_DIR, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
 from fetch_rr_shock import load_rr_shock_monthly
 from local_projections import estimate_irf_linear, estimate_irf_quad, estimate_irf_sign_both, fev_share_linear
 from plotting import plot_irf
@@ -47,7 +49,7 @@ def merge_monthly_panel() -> pd.DataFrame:
     shock = load_rr_shock_monthly().rename(columns={"shock": "eps"})
     shock["date"] = pd.to_datetime(shock["date"])
     m = emp.merge(shock, on="date", how="inner").sort_values("date")
-  # Employment may extend past 2020; Romer–Romer shocks stop in 2008 (paper baseline).
+    # Employment may extend past 2020; updated Romer–Romer shocks stop in 2008 (paper baseline).
     m = m[(m["date"] >= pd.Timestamp(START_DATE)) & (m["date"] <= pd.Timestamp(SHOCK_END_DATE))]
     return m.reset_index(drop=True)
 

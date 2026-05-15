@@ -1,92 +1,176 @@
 """
-Download or load Romer–Romer monetary policy shocks (monthly).
+Load the updated Romer--Romer monetary policy shocks.
 
-The paper uses Romer & Romer (2004) shocks extended by Coibion et al. (2012) through 2008.
-Replication packages differ in formatting. This module:
+The replication uses the CSV distributed from Yuriy Gorodnichenko's Berkeley page
+for Coibion, Gorodnichenko, Kueng, and Silvia, "Innocent Bystanders? Monetary
+Policy and Inequality in the U.S."  The file is named
+``RR_MPshocks_Updated(GBforecasts).csv`` and extends the Greenbook-forecast-based
+Romer--Romer monetary-policy shock series through 2008.
 
-1. Loads `data/rr_shock_monthly.csv` if present (columns: date, shock) where shock is in
-   percentage points of the funds rate target surprise (contractionary = positive), monthly.
-2. Otherwise tries a few public GitHub CSV layouts and normalizes to month-end dates.
+The source CSV is an FOMC-meeting-level file, not the normalized monthly
+``date, shock`` layout previously used by this repository.  In particular:
 
-If nothing is found, raise FileNotFoundError with instructions to place the Coibion et al.
-(2012) / Romer replication monthly shock series in `data/rr_shock_monthly.csv`.
+1. The meeting date is stored in ``MTGDATE`` and may be exported in several
+   formats (for example YYYYMMDD integers, Stata daily dates, Excel serial dates,
+   or ordinary date strings).
+2. The shock to use is the *last column* of the CSV.
+3. Meeting-level shocks are summed within each calendar month.  Months between
+   the first and last meeting with no shock observation are filled with zero so
+   the returned ``date, shock`` DataFrame is a regular monthly series.
 """
 
 from __future__ import annotations
 
-import io
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-import requests
 
 from config import DATA_DIR
 
-CANDIDATE_URLS = (
-    # Community-maintained replication outputs (layout may change).
-    "https://raw.githubusercontent.com/miguel-acosta/RomerRomer2004/master/output/rrshocks.csv",
-)
+UPDATED_RR_SHOCK_FILENAME = "RR_MPshocks_Updated(GBforecasts).csv"
+LEGACY_RR_SHOCK_FILENAME = "rr_shock_monthly.csv"
+
+
+def _parse_numeric_dates(values: pd.Series) -> pd.Series:
+    """Parse common numeric exports of MTGDATE into pandas timestamps."""
+    numeric = pd.to_numeric(values, errors="coerce")
+    parsed = pd.Series(pd.NaT, index=values.index, dtype="datetime64[ns]")
+
+    # Compact calendar dates exported as integers/floats, e.g. 20080130 or 200801.
+    as_str = values.astype("string").str.strip().str.replace(r"\.0$", "", regex=True)
+    yyyymmdd = as_str.str.fullmatch(r"\d{8}").fillna(False)
+    parsed.loc[yyyymmdd] = pd.to_datetime(
+        as_str.loc[yyyymmdd], format="%Y%m%d", errors="coerce"
+    )
+    yyyymm = as_str.str.fullmatch(r"\d{6}").fillna(False)
+    parsed.loc[yyyymm] = pd.to_datetime(
+        as_str.loc[yyyymm] + "01", format="%Y%m%d", errors="coerce"
+    )
+
+    remaining = parsed.isna() & numeric.notna()
+    if not remaining.any():
+        return parsed
+
+    # Stata daily dates count from 1960-01-01.  FOMC dates from 1969--2008 have
+    # values roughly 3,000--18,000, whereas Excel serial dates for the same range
+    # are roughly 25,000--40,000.
+    stata_like = remaining & numeric.between(2500, 20000)
+    parsed.loc[stata_like] = pd.to_datetime(
+        numeric.loc[stata_like], unit="D", origin="1960-01-01", errors="coerce"
+    )
+
+    excel_like = remaining & parsed.isna() & numeric.between(20000, 50000)
+    parsed.loc[excel_like] = pd.to_datetime(
+        numeric.loc[excel_like], unit="D", origin="1899-12-30", errors="coerce"
+    )
+    return parsed
 
 
 def _parse_date_series(s: pd.Series) -> pd.Series:
-    return pd.to_datetime(s, utc=False, errors="coerce")
+    """Parse MTGDATE/date values while avoiding pandas' integer-as-nanoseconds trap."""
+    parsed_numeric = _parse_numeric_dates(s)
+    remaining = parsed_numeric.isna()
+    if not remaining.any():
+        return parsed_numeric
+
+    text = s.astype("string").str.strip()
+    parsed_strings = pd.to_datetime(text, utc=False, errors="coerce", format="mixed")
+
+    # If a CSV is exported with day/month/year strings, the default US-oriented
+    # parser can silently reject many rows.  Retry those rows with dayfirst=True
+    # and keep whichever parse covers more observations.
+    parsed_dayfirst = pd.to_datetime(
+        text, utc=False, errors="coerce", dayfirst=True, format="mixed"
+    )
+    if parsed_dayfirst.notna().sum() > parsed_strings.notna().sum():
+        parsed_strings = parsed_dayfirst
+
+    out = parsed_numeric.copy()
+    out.loc[remaining] = parsed_strings.loc[remaining]
+    return out
 
 
 def _aggregate_meeting_shocks_to_month(df: pd.DataFrame, date_col: str, shock_col: str) -> pd.DataFrame:
-    d = df[[date_col, shock_col]].dropna().copy()
-    d["month"] = _parse_date_series(d[date_col]).dt.to_period("M").dt.to_timestamp()
-    monthly = d.groupby("month", as_index=False)[shock_col].sum()
+    d = df[[date_col, shock_col]].copy()
+    d[shock_col] = pd.to_numeric(d[shock_col], errors="coerce")
+    d["date"] = _parse_date_series(d[date_col]).dt.to_period("M").dt.to_timestamp()
+    d = d.dropna(subset=["date", shock_col])
+    if d.empty:
+        raise ValueError(
+            f"Could not parse any valid meeting dates/shocks from columns {date_col!r}, {shock_col!r}"
+        )
+
+    monthly = d.groupby("date", as_index=False)[shock_col].sum()
     monthly = monthly.rename(columns={shock_col: "shock"})
-    return monthly
+    full_months = pd.date_range(monthly["date"].min(), monthly["date"].max(), freq="MS")
+    monthly = (
+        monthly.set_index("date")
+        .reindex(full_months, fill_value=0.0)
+        .rename_axis("date")
+        .reset_index()
+    )
+    return monthly[["date", "shock"]].sort_values("date").reset_index(drop=True)
 
 
-def try_fetch_remote_rr() -> Optional[pd.DataFrame]:
-    for url in CANDIDATE_URLS:
-        try:
-            r = requests.get(url, timeout=30)
-            r.raise_for_status()
-            raw = pd.read_csv(io.StringIO(r.text))
-        except Exception:
-            continue
-        cols = {c.lower(): c for c in raw.columns}
-        # Heuristic column detection
-        date_col = None
-        for key in ("fomc", "date", "meeting", "month"):
-            if key in cols:
-                date_col = cols[key]
-                break
-        shock_col = None
-        for key in ("rr_original", "rr_update", "shock", "residual", "epsilon", "mp_shock"):
-            if key in cols:
-                shock_col = cols[key]
-                break
-        if date_col is None or shock_col is None:
-            continue
-        out = _aggregate_meeting_shocks_to_month(raw, date_col, shock_col)
-        out["date"] = out["month"]
-        return out[["date", "shock"]]
-    return None
+def _load_updated_rr_shocks(path: Path) -> pd.DataFrame:
+    raw = pd.read_csv(path)
+    if raw.empty:
+        raise ValueError(f"{path} is empty")
+
+    cols_by_upper = {c.upper(): c for c in raw.columns}
+    date_col = cols_by_upper.get("MTGDATE")
+    if date_col is None:
+        raise ValueError(f"{path} must contain an MTGDATE column with FOMC meeting dates")
+
+    shock_col = raw.columns[-1]
+    if shock_col == date_col:
+        raise ValueError(f"{path} must contain at least one shock column after MTGDATE")
+
+    return _aggregate_meeting_shocks_to_month(raw, date_col, shock_col)
+
+
+def _load_legacy_monthly_shocks(path: Path) -> pd.DataFrame:
+    df = pd.read_csv(path)
+    if "date" not in df.columns or "shock" not in df.columns:
+        raise ValueError(f"{path} must have columns: date, shock")
+    df = df[["date", "shock"]].copy()
+    df["date"] = _parse_date_series(df["date"])
+    df["shock"] = pd.to_numeric(df["shock"], errors="coerce")
+    df = df.dropna(subset=["date", "shock"])
+    return df.sort_values("date").reset_index(drop=True)
 
 
 def load_rr_shock_monthly(path: Optional[Path] = None) -> pd.DataFrame:
-    path = path or (DATA_DIR / "rr_shock_monthly.csv")
-    if path.exists():
-        df = pd.read_csv(path)
-        if "date" not in df.columns or "shock" not in df.columns:
-            raise ValueError(f"{path} must have columns: date, shock")
-        df["date"] = pd.to_datetime(df["date"])
-        return df.sort_values("date").reset_index(drop=True)
+    """Load monetary-policy shocks as monthly ``date``/``shock`` observations.
 
-    remote = try_fetch_remote_rr()
-    if remote is not None:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        remote.to_csv(path, index=False)
-        return remote.sort_values("date").reset_index(drop=True)
+    By default this reads ``data/RR_MPshocks_Updated(GBforecasts).csv`` and uses
+    the last column as the meeting-level shock, summed to monthly frequency with
+    zeros for no-meeting months.  A path may be supplied for tests
+    or one-off alternatives.  The previous normalized ``data/rr_shock_monthly.csv``
+    is still accepted as a fallback when the updated Berkeley CSV has not yet
+    been placed in ``data/``.
+    """
+    if path is not None:
+        path = Path(path)
+        if path.name == LEGACY_RR_SHOCK_FILENAME:
+            return _load_legacy_monthly_shocks(path)
+        return _load_updated_rr_shocks(path)
+
+    updated_path = DATA_DIR / UPDATED_RR_SHOCK_FILENAME
+    if updated_path.exists():
+        return _load_updated_rr_shocks(updated_path)
+
+    legacy_path = DATA_DIR / LEGACY_RR_SHOCK_FILENAME
+    if legacy_path.exists():
+        return _load_legacy_monthly_shocks(legacy_path)
 
     raise FileNotFoundError(
-        "Could not find Romer–Romer monthly shocks. Create data/rr_shock_monthly.csv with "
-        "columns `date` (YYYY-MM-DD) and `shock` (percentage points, contractionary positive), "
-        "or install a replication file from Coibion et al. (2012) / Romer & Romer (2004) and "
-        "aggregate FOMC meeting shocks to calendar months (sum within month)."
+        f"Could not find updated Romer--Romer shocks. Place {UPDATED_RR_SHOCK_FILENAME!r} "
+        "from Yuriy Gorodnichenko's Berkeley page for 'Innocent Bystanders? "
+        "Monetary Policy and Inequality in the U.S.' in the data/ directory. The loader "
+        "expects an MTGDATE column and uses the final CSV column as the shock, summing "
+        "meeting-level shocks within month and filling no-meeting months with zero. "
+        f"The legacy normalized {LEGACY_RR_SHOCK_FILENAME!r} "
+        "file is accepted only as a fallback."
     )
