@@ -1,0 +1,108 @@
+Issue month: 1982-10
+Reference month: 1982-09
+Status: needs_review
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1980s/empl_101982.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_101982.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_101982.txt
+Warnings: block may be a persons-at-work or hours table
+Error: (none)
+
+Best candidate page: 31
+Candidate lines: 2529-2609
+Candidate score: 82.5
+
+Extracted category values (thousands):
+  blue_collar_workers: 27866 (line 2557: Blue-collar workers                          27,866        2,578            1,783     23.505    16,840           3.081    3,584          39.0)
+  clerical: 17713 (line 2556: Clerical workers                           17,713          849           3,289      13.575    11,490           1.195      890          35.3)
+  craft: 11724 (line 2558: Craft and kindred workers                 11,724          784              395     10.545     7,282           1,444    1,819          40.7)
+  managers: 11249 (line 2554: Managers and administrators, except farm   11,249          179             544      10,526     5,233           1.430    3.863          45.0)
+  nonfarm_laborers: 4411 (line 2561: Nonfarm laborers                           4,411          614              74 7     3.050     2,390             338      322          33-9)
+  operatives_except_transport: 8533 (line 2559: Operatives, except transport               8,533          922              397      7.214     5,581             926      707          38.6)
+  professional_technical: 16155 (line 2553: Professional and technical                 16,155          431           1,916      13,808     8,999           1.647    3.162          40.0)
+  sales: 6068 (line 2555: Sales workers                               6,068          422           1,405       4.241     2,545             531    1,165          36.4)
+  service_workers: 13063 (line 2562: Service workers                              13,063        1,543           3,933       7.587     5,882              703    1,002         32.1)
+  transport_equipment_operatives: 1589 (line 2560: Transport equipment operatives             3.199          258              243      2.698     1,589             374      735          41.4)
+  white_collar_workers: 51186 (line 2552: White-collar workers                         51,186        1.882           7,154      42.150    28,265           4.804    9.081          39-1)
+
+Candidate block:
+                                                                                                                                                        HOUSEHOLD DATA
+
+                    A-30. Persons at work in nonfarm occupations by sex and full- or part-time status
+                   [Numbers in thousands]
+
+
+                                                                                                              September      1982
+
+
+
+                                                                                                                    On full-time schedules
+
+                                        Occupation and sex
+                                                                           On part time   On valuntary                                                    Average
+                                                                          for economic                                                                   hours, total
+                                                                             reasons                              40 hours        41 to 48   49 hours     at work
+                                                                                                          Total
+                                                                                                                   or less         hours     or more
+
+
+
+
+                         Total, 16 years and over               92.115        6.003          12,870      73.242    50,987           8,588    13.667         38.1
+                   White-collar workers                         51,186        1.882           7,154      42.150    28,265           4.804    9.081          39-1
+                     Professional and technical                 16,155          431           1,916      13,808     8,999           1.647    3.162          40.0
+                     Managers and administrators, except farm   11,249          179             544      10,526     5,233           1.430    3.863          45.0
+                     Sales workers                               6,068          422           1,405       4.241     2,545             531    1,165          36.4
+                     Clerical workers                           17,713          849           3,289      13.575    11,490           1.195      890          35.3
+                   Blue-collar workers                          27,866        2,578            1,783     23.505    16,840           3.081    3,584          39.0
+                      Craft and kindred workers                 11,724          784              395     10.545     7,282           1,444    1,819          40.7
+                      Operatives, except transport               8,533          922              397      7.214     5,581             926      707          38.6
+                      Transport equipment operatives             3.199          258              243      2.698     1,589             374      735          41.4
+                      Nonfarm laborers                           4,411          614              74 7     3.050     2,390             338      322          33-9
+                   Service workers                              13,063        1,543           3,933       7.587     5,882              703    1,002         32.1
+                      Private household                            991          193             496         302       212               27       63         23.2
+                      Other service workers                     12,071        1.350           3,43 8      7.283     5,669              676      938         32.9
+                         Males, 16 years and over               51,444        2,829           3,758      44.857    28.248           5,774    10,835         41-0
+                   White-collar workers                         23.758           507           1,495     21.756    12.073           2,785    6,898          43.3
+                     Professional and technical                  8,887           155             500      8.232     4.921             937    2,374          42.9
+                     Managers and administrators, except farm    8,055           113             225      7.717     3,417           1,088    3,212          46.6
+                     Sales workers                               3,416           119             390      2,907     1,567             400      940          41.3
+                     Clerical workers                            3.400           120             380      2,900     2,169             359      372          38.6
+                   Blue-collar workers                          22,681        1,921           1,242      19,518    13,546           2,638    3,334          39.7
+                      Craft and kindred workers                 10,888          728             292       9.868     6.745           1,371    1,752          41.0
+                      Operatives, except transport               5,007          413             183       4.411     3,246             610      555          39.7
+                      Transport equipment operatives             2,910          224             140       2.546       467             360      719          42.5
+                      Nonfarm laborers                           3.877          557             627       2.693      ,089             297      3 07         34.1
+                   Service workers                               5.005           401          1.021       3.583       ,629             351      6 03        36.2
+                      Private household                             38            13             20           5          1               2         2        17.3
+                      Other service workers                      4.967           388          1,000       3,579       ,628             350      601         36.4
+                         Females, 16 years and over                                                                                 2,814    2,831
+                                                                40,671        3,174           9,113      28.384    22,739                                   34.3
+                   White-collar workers               ,                                                            16,192           2.019
+                                                                27,428        1.375           5,659      20.394                              2,183          35.4
+                     Professional and technical                                                                     4,077             710
+                                                                 7,267          276           1,416       5,575                                 788         36.4
+                     Managers and administrators, except farm                                                       1,814             342
+                                                                 3.194           67             319       2.808                                652          40.9
+                     Sales workers                                                                                    977              131
+                                                                 2.652          303           1,015       1.334                                226          30.1
+                     Clerical workers                           14,314          730           2,909      10.675     9,322             836      517          34.6
+                   Blue-collar workers                           5,185           657              541     3.987     3,294              443      250         36.
+                      Craft and kindred workers                                                                       536
+                                                                   836            56              103       677                         73       68         36.
+                      Operatives, except transport                                                                  2,335              316
+                                                                 3,526           509              214     2.803                                 152         36.
+                      Transport equipment operatives               2 89           34              103       152       122               14       16         30.
+                      Nonfarm laborers                             534            57              121       356       301               41       14         32.
+                   Service workers                                                                                  3,253
+                                                                 8,058        1.142           2,913       4.003                        352      398         29.6
+                      Private household                             954         180             475         299       213               25       61         23-4
+                      Other service workers                      7, 104         962           2.43 8      3,704     3,041              327      336         30.4
+
+
+
+
+                                                                                                                                                                        29
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

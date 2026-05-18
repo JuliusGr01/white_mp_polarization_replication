@@ -2,8 +2,10 @@
 Run local projections for White (2022).
 
 Steps:
-  1) Place IPUMS CPS extract CSV (see build_employment_from_ipums.py) or existing
-     `data/employment_monthly.csv` with columns from that module.
+  1) Build the routine/nonroutine employment panel from the BLS broad-occupation
+     series in `data/bls_occ_employed_monthly.csv`. These public BLS series start
+     in 1983, so this is a best-effort public-data approximation to White's
+     1969-2008 occupational sample.
   2) Romer–Romer shocks: place `data/RR_MPshocks_Updated(GBforecasts).csv`
      from Yuriy Gorodnichenko's Berkeley page. The loader uses MTGDATE and
      the final CSV column, sums shocks by month, and fills no-meeting months
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent
@@ -26,26 +29,24 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
+from build_employment_panel import BLS_OCC_SOURCE, build_employment_panel
 from config import DATA_DIR, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
 from fetch_rr_shock import load_rr_shock_monthly
 from local_projections import estimate_irf_linear, estimate_irf_quad, estimate_irf_sign_both, fev_share_linear
-from plotting import plot_irf
+from plotting import plot_figure3, plot_irf
 
 
 def merge_monthly_panel() -> pd.DataFrame:
     emp_path = DATA_DIR / "employment_monthly.csv"
-    if not emp_path.exists():
+    if BLS_OCC_SOURCE.exists():
+        emp = build_employment_panel(BLS_OCC_SOURCE)
+    elif emp_path.exists():
+        emp = pd.read_csv(emp_path, parse_dates=["date"])
+    else:
         raise FileNotFoundError(
-            f"Missing {emp_path}. Build it with:\n"
-            "  python build_employment_from_ipums.py path/to/ipums_cps.csv\n"
-            "or from Python:\n"
-            "  from pathlib import Path\n"
-            "  from build_employment_from_ipums import build_employment_monthly\n"
-            "  build_employment_monthly(Path('ipums_cps.csv'))\n"
-            "after downloading a CPS basic monthly extract from IPUMS USA (1983+),\n"
-            "  OR run: python fetch_bls_cps_occupation.py   (official BLS monthly CPS occupation series)."
+            f"Missing {BLS_OCC_SOURCE} and {emp_path}. Provide the BLS broad-occupation "
+            "monthly file or a prebuilt employment_monthly.csv."
         )
-    emp = pd.read_csv(emp_path, parse_dates=["date"])
     shock = load_rr_shock_monthly().rename(columns={"shock": "eps"})
     shock["date"] = pd.to_datetime(shock["date"])
     m = emp.merge(shock, on="date", how="inner").sort_values("date")
@@ -100,27 +101,35 @@ def _run(args: argparse.Namespace) -> None:
     horizons = range(1, H_MAX + 1)
 
     outcomes = [
-        ("log_total", "log total employment", "Δ log total employment"),
-        ("log_routine", "log routine employment", "Δ log routine employment"),
-        ("log_nonroutine", "log nonroutine employment", "Δ log nonroutine employment"),
-        ("routine_share", "routine share of employment", "Δ routine share"),
+        ("log_total", "log total employment", "Percent", 100.0),
+        ("log_routine", "log routine employment", "Percent", 100.0),
+        ("log_nonroutine", "log nonroutine employment", "Percent", 100.0),
+        ("routine_share", "routine share of employment", "% Points", 100.0),
     ]
 
     fev_rows = []
-    for dep, slug, ylab in outcomes:
+    figure3_irfs = {}
+    for dep, slug, ylab, scale in outcomes:
         ir = estimate_irf_linear(panel, dep, "eps", horizons, N_LAGS_Y, N_LAGS_SHOCK)
-        plot_irf(ir, out_dir / f"irf_linear_{slug.replace(' ', '_')}.png", f"Linear LP — {slug}", ylab)
+        ir_scaled = replace(ir, coef=ir.coef * scale, se=ir.se * scale)
+        figure3_irfs[dep] = ir_scaled
+        plot_irf(
+            ir_scaled,
+            out_dir / f"irf_linear_{slug.replace(' ', '_')}.png",
+            f"Linear LP — {slug}",
+            ylab,
+        )
         fev_rows.append(fev_share_linear(panel, dep, "eps", horizons, N_LAGS_Y, N_LAGS_SHOCK).assign(spec="linear"))
 
         p_plus, p_minus = estimate_irf_sign_both(panel, dep, "eps", horizons, N_LAGS_Y, N_LAGS_SHOCK)
         plot_irf(
-            p_plus,
+            replace(p_plus, coef=p_plus.coef * scale, se=p_plus.se * scale),
             out_dir / f"irf_sign_contraction_{slug.replace(' ', '_')}.png",
             f"Sign-split LP — contractionary ε+ — {slug}",
             ylab,
         )
         plot_irf(
-            p_minus,
+            replace(p_minus, coef=p_minus.coef * scale, se=p_minus.se * scale),
             out_dir / f"irf_sign_expansion_{slug.replace(' ', '_')}.png",
             f"Sign-split LP — expansionary ε- — {slug}",
             ylab,
@@ -128,18 +137,19 @@ def _run(args: argparse.Namespace) -> None:
 
         q_pos, q_neg = estimate_irf_quad(panel, dep, "eps", horizons, N_LAGS_Y, N_LAGS_SHOCK)
         plot_irf(
-            q_pos,
+            replace(q_pos, coef=q_pos.coef * scale, se=q_pos.se * scale),
             out_dir / f"irf_quad_contraction_{slug.replace(' ', '_')}.png",
             f"Quadratic LP — +1 pp shock — {slug}",
             ylab,
         )
         plot_irf(
-            q_neg,
+            replace(q_neg, coef=q_neg.coef * scale, se=q_neg.se * scale),
             out_dir / f"irf_quad_expansion_{slug.replace(' ', '_')}.png",
             f"Quadratic LP — -1 pp shock — {slug}",
             ylab,
         )
 
+    plot_figure3(figure3_irfs, out_dir / "figure3_linear_occupations.png")
     fev = pd.concat(fev_rows, ignore_index=True)
     fev_pivot = fev.pivot_table(index="horizon", columns="outcome", values="fev_share")
     fev_pivot.to_csv(out_dir / "fev_linear.csv")

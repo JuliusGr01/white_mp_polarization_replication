@@ -1,0 +1,114 @@
+Issue month: 1967-01
+Reference month: 1966-12
+Status: needs_review
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1960s/empl_011967.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_011967.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_011967.txt
+Warnings: routine+nonroutine coverage of printed total net of farm workers is 1.140
+Error: (none)
+
+Best candidate page: 30
+Candidate lines: 2252-2338
+Candidate score: 127.8
+
+Extracted category values (thousands):
+  blue_collar_workers: 26874 (line 2322: Blue-collar workers                                  26,874      27,079             26,557       22,215              22,428          22,222       4,659         4,652            4,336)
+  clerical: 12277 (line 2320: Clerical workers                                    12,277      12,304             11,623        3,491               3,422           3,332       8,787         8,882            8,292)
+  craft: 9653 (line 2323: Craftsmen and foremen                                9,653       9,752              9,283        9,389               9,488           9,047         264           265              236)
+  farm_workers: 3169 (line 2329: Farm workers                                          3,169       3,679              3,372        2,729               3,018           2,883         441           661              489)
+  managers: 7306 (line 2319: Managers, officials, and proprietors                 7,306       7,472              7,250        6,143               6,266           6,153       1,163         1,205            1,097)
+  nonfarm_laborers: 3288 (line 2325: Nonfarm laborers                                     3,288       3,415              3,628        3,199               3,317           3,522          90            98              105)
+  operatives_total: 13933 (line 2324: Operatives                                          13,933      13,912             13,648        9,627               9,623           9,653       4,305         4,289            3,995)
+  professional_technical: 19989 (line 2318: Professional and technical                           9,989       9,804              9,095        6,208               6,101           5,668       3,781         3,703            3,427)
+  sales: 5045 (line 2321: Sales workers                                        5,045       4,721              5,185        2,824               2,714           3,002       2,220         2,007            2,184)
+  service_workers: 9951 (line 2326: Service workers                                       9,951       9,947              9,665        3,420               3,462           3,356       6,531         6,486            6,309)
+  white_collar_workers: 34617 (line 2317: White-collar workers                                 34,617      34,301             33,153       18,666              18,503          18,155      15,951        15,797           15,000)
+
+Candidate block:
+                    HOUSEHOLD DATA
+
+                              Table A-14: Total labor force, by age and sex                                                  Table A-15: Employed persons, by age and sex
+                                                                                                                                                             (In thousands)
+                                                                                 Labor force
+                                                  Thousands of persons         participation rate                                                            Male                           Female
+                         Age and sex                                                                                       Age and sex
+                                                Dec*       Nov.    Dec.    Dec 6     Nov.        Dec.                                             Dec.        Nov.     Dec.       Dec.      Nov.       Dec.
+                                                1966       1966    1965    1966      1966        1965                                             1966        1966     1965       1966      1966       1965
+                      Total                   80,734       80,968 78,477   57.9      58.2        57,2              All industries*              47,029      47 ,409 46 ,615      27 ,583    27,597    26,134
+                                                                                                                     14 to 19 y e a r s . . . .  3,462       3 ,568 3 ,372        3 ,176     3,014     2,851
+                    Male                        51,987     52,058 51,148   77.0      77,2        76.9                20 to 24 y e a r s . . . . 4,543        4 ,560 4 ,479        3 ,644     3,517     3,300
+                     14 to 19 y e a r s . . . . 4,418       4,442 4,209    40,8      41.0        39,9                25 to 3 4 , :               9 ,771      9 ,783 9 ,584        4 ,616     4,619     4,327
+                       14 and 15 years . .         616        632    593   16.6      17.1        16.5                35 to 44 y e a r s . . . . 10,654      10 ,687 10 ,840       5 ,745     5,784     5,534
+                       16 and 17 years. . 1,486             1,474 1,430    42.0      41,7        40.6                45 to 54 y e a r s . . . .  9 932      10 ,011 9 ,807        5 ,789     5,936     5,631
+                       18 and 19 years. . 2,316             2,335 2,186    64.4      64.8        64.0                55 to 64 y e a r s . . . .  0,698       6 ,764 6 ,543        3 ,678     3,738     3,555
+                     20 to 24 y e a r s . . . . 6,247       6,170 5,933    86.9      86.4        86.7                65 years and over. .        1,958       2 ,036 1 ,990           934       989       937
+                     25 to 34 y e a r s . . . . 10,829     10,790 10,629   97.3      97.2        96.9
+                     35 to 44 y e a r s . . . . 11,324     11,367 11,453   97.2      97.5        97.4
+                     45 to 54 y e a r s . . . . 10,273     10,282 10,124   95.5      95.7        95.1              Nonagricultural
+                     55 to 64 y e a r s . . . . 6,873       6,912 6,755    84.2      84.8        84.0                industries                 44,069      44 ,161 4 3 ,509     27 ,078    26,876    25,595
+                       55 to 59 years. . . 4,025            4,028 3,928    90,3      90.5        89.6                14 to 19 y e a r s . . . .  3,138       3 ,133 3 ,046        3 ,148     2,953     2,804
+                       60 to 64 years. . . 2,848            2,884 2,827    76.9      77.9        77.2                20 to 24 y e a r s . . . .  4,383       4 ,399 4 ,299        3 ,634     3,486     3,266
+                     65 years and over. . 2,026             2,095 2,045    26.1      27.0        26.6                25 to 34 years. . . .       9,410       9 ,382 9 ,168        4 ,528     4,514     4,263
+                                                                                                                     35 to 44 years. . . . 10,164           10 ,156 10 ,268       5 ,632     5,638     5,416
+                    Female                       28,748    28,910 27,329   40.0      40.2        38.6                45 to 54 y e a r s . . . .  9,276       9 ,306 9 ,157        5 ,658     5,740     5,502
+                      14 to 19 years. . . . 3,473           3,403 3,181    32.8      32.2        30.9                55 to 64 y e a r s . . . .  6,108       6 ,163 5 ,951        3 ,569     3,604     3,440
+                       14 and 15 years. .           476       441    440   13.2      12.3        12.6                65 years and over. .        1,591       1 ,622 1 ,620           909       940       904
+                       16 and 17 years. . 1,105             1,062 1,000    32.1      30.8        29.1
+                       18 and 19 years . .        1,892     1,900 1,740    53.6      53.7        51.8
+                      20 to 24 years. . . . 3,842           3,719 3,493    53.4      52.1        51.0              Agriculture                     2,960      3 ,248   3 ,106       505         721      539
+                      25 to 34 y e a r s . . . . 4,806      4,825 4,522    42.1      42.4        40.2                14 to 19 y e a r s . . . .      324         435      326        28          61       47
+                      35 to 44 y e a r s . . . . 5,932      5,989 5,752    48.5      48.9        46.6                20 to 24years. . . .            161         161      180        10          31       35
+                      45 to 54 y e a r s . . . . 5,959      6,123 5,779    52.0      53..        51.2                25 to 34 y e a r s . . . .      360         401      416        88         105       64
+                      55 to 64 years . . . . ; 3 , 7 6 8    3,828 3,630    41.9      42.6        41.2                35 to 44 years                  500         531      573       113         146      118
+                       55 to 59 years. . . 2,332            2,381 2,211    48.2      49.3        46.7               45 to 54 years                   656         706      651       131         197      127
+                       60 to 64 years. . . 1,436            1,447 1,419    34.6      34.9        34.8                55 to 64 y e a r s . . . .      592         601      592       109         134      115
+                      65 years and over. .          970     1,022    971     9.6     10.1           9.8             65 years and over. .             367         414      369        26          49       33
+
+
+
+
+                                                               Table A-16: Employed persons, by class of worker and occupation
+
+                                                                                                          (In thousands)
+                                                                                        Total                                              Male
+                                        Characteristics
+                                                                            Dec.        Nov.               Dec.            Dec.             Nov.            Dec.        Dec.             Nov.         Dec.
+                                                                            1966        1966               1965            1966             1966            1965        J966             1966         1965
+                                    CLASS OF WORKER
+                    Total                                                  74,612     75,006              72,749       47,029              47,409          46,615      27,583        27,597           26,134
+                      Nonagricultural industries                           71,147     71,035              69,103       44,069              44,161          43,509      27,078        26,876           25,595
+                       Wage and salary workers                             64,715     64,468              62,497       39,586              39,602          38,841       25,129       24,865           23,656
+                          Private household workers                         2,511      2,502               2,596          197                 248             233        2,314        2,254            2,362
+                          Government workers                               10,889     11,138              10,023        6,165               6,236           5,803        4,724        4,902            4,220
+                          Other wage and salary workers . .                51,315     50,828              49,878       33,224              33,118          32,805       18,091       17,709           17,074
+                       Self-employed workers                                5,915      6,003               6,009        4,443               4,512           4,614      * 1,472        1,491            1,395
+                       Unpaid family workers                                  520        566                 597           44                  46              53          476          520              544
+                      Agriculture                                           3*465      3,969               3,645        2,960               3,248           3,106          505          721              539
+                       Wage and salary workers                                988      1,253               1,118          876               1,041             980          112          212              138
+                       Self-employed workers                                1,958      2,059               2,029        1,864               1,962           1,907           95           97              121
+                       Unpaid family workers                                  516        658                 499          217                 246             219          299          412              280
+
+                                      OCCUPATION
+                    Total                               ..                 74,612      75,006             72,749       47,029              47,409          46,615      27,583        27,597           26,134
+                      White-collar workers                                 34,617      34,301             33,153       18,666              18,503          18,155      15,951        15,797           15,000
+                       Professional and technical                           9,989       9,804              9,095        6,208               6,101           5,668       3,781         3,703            3,427
+                       Managers, officials, and proprietors                 7,306       7,472              7,250        6,143               6,266           6,153       1,163         1,205            1,097
+                       Clerical workers                                    12,277      12,304             11,623        3,491               3,422           3,332       8,787         8,882            8,292
+                       Sales workers                                        5,045       4,721              5,185        2,824               2,714           3,002       2,220         2,007            2,184
+                      Blue-collar workers                                  26,874      27,079             26,557       22,215              22,428          22,222       4,659         4,652            4,336
+                       Craftsmen and foremen                                9,653       9,752              9,283        9,389               9,488           9,047         264           265              236
+                       Operatives                                          13,933      13,912             13,648        9,627               9,623           9,653       4,305         4,289            3,995
+                       Nonfarm laborers                                     3,288       3,415              3,628        3,199               3,317           3,522          90            98              105
+                      Service workers                                       9,951       9,947              9,665        3,420               3,462           3,356       6,531         6,486            6,309
+                       Private household workers. . . . . .                 2,400       2,324              2,396           80                  70              60       2,320         2,254            2,336
+                       Other service workers                                7,551       7,623'             7,269        3,340               3,392           3,296       4,211         4,232            3,973
+                      Farm workers                                          3,169       3,679              3,372        2,729               3,018           2,883         441           661              489
+                       Fanners and farm managers                            1,938       2,031              2,014        1,850               1,937           1,899          88            94              115
+                       Farm laborers and foremen                            1,231       1,648              1,358          879               1,031             983         353           567              374
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

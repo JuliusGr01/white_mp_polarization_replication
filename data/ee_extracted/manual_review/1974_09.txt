@@ -1,0 +1,140 @@
+Issue month: 1974-09
+Reference month: 1974-08
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/1970-1974/empl_091974.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_091974.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_091974.txt
+Warnings: missing required categories: clerical, craft, managers, nonfarm_laborers, operatives_except_transport, professional_technical, sales, service_workers, transport_equipment_operatives; routine+nonroutine total is implausible: 0 thousand; routine share is implausible: nan
+Error: (none)
+
+Best candidate page: 30
+Candidate lines: 2607-2730
+Candidate score: 17.8
+
+Extracted category values (thousands):
+
+Candidate block:
+            HOUSEHOLD DATA                                                                                30
+
+                                                    A-18: Unemployed persons by duration, occupation, and industry of last job
+                                                                                      August 1974
+                                                                                                                                                                           15 weeks and
+                                                                                   Thousands of persons
+                                                                                                                                                                          over as a percent
+                          Occupation and industry                         Less than
+                                                                          5 weeks
+                                                                                         5 to 14
+                                                                                          weeks
+                                                                                                         15 to 26
+                                                                                                          weeks
+                                                                                                                     r                                                of unemployed in group
+                                                                                                                                                                        Aug.              Aug.
+                                                                                                                                                                       1973              1974
+
+                              OCCUPATION
+
+            White collar workers                                1,451       706            469             147                                                         17.5              19. 0
+              Professional and managerial . . .                   526       236            177              55                                                         24.1              21. 5
+              Sales workers                                       198       109             54              22                                                         10.2              18. 1
+              Clerical workers                                    72.7      361            238              69                                                         15.0              17.5
+
+            Blue-collar workers                                 1,882       987            540             174                                                         18.9              18.9
+               Craft and kindred workers                          439       227            125              44                                                         19.1              20.0
+               Operatives, except transport                       866       475            237              75                                                         19.8              17. 8
+               Transport equipment operatives .                   136        62             39              13                                                         20.0              25. 3
+               Nonfarm laborers                                   441       223            139              42                                                         16.4              18.0
+
+            Service workers                                         763     42 3           221              67                                                         15.3              15.6
+
+                               INDUSTRY'
+
+                                                                                            34               3                                                          7.2               2. 7
+            Agriculture                                           100        63
+                                                                  378       207            111              25                                                         16.8              15.7
+            Construction
+            Manufacturing                                       1,168       603            333             119                                                         21.4              19.8
+              Durable goods                                       628       311            176              71                                                         23 .9             22.5
+              Nondurable goods                                    540       292            157              48                                                         18.5              16.8
+
+            Transportation and public utilities                   182        87             46              25                                                         30 .8             27.0
+            Wholesale and retail trade                            960       496            297              92                                                         13.9              17.3
+            Finance and service industries                      1,208       608            396             111                                                         16 .3             17.0
+            Public administration                                  95        44             28               7                                                         19 .7             24.9
+
+            No previous work experience                                     333            30 3                                                                            8 .1           9.5
+
+               1
+                   Includes wage and salary workers only.
+
+
+
+
+                                                                          A-19: Employed persons by sex and age
+
+                                                                                                                                                Male
+                                         Age and type of industry
+                                                                                           Aug.    1973          Aug.    1974   Aug_.   197_3    ] Aug. 1974    Aug. 1973         Aug.    1974
+
+                                                                                                  ,920              87,575       53,486                54,043    32 434            33,532
+            All industries
+                                                                                                  ,676               8,819        4,902                 4,959     3,774             3,860
+                16 to 19 years
+                                                                                                  ,840               3.876        2,236                 2,198     1,604             1,678
+                   16 to 17 years
+                                                                                                  ,836               4,943        2,666                 2,761     2,170             2,182
+                   18 to 19 years
+                                                                                                  ,202              12,426        6,996                 6,991     5,206             5,436
+               20 to 24 years
+                                                                                                  ,317              52,691       32,914                33,365    18,403            19,327
+               25 to 54 years
+                                                                                                  ,068              20,149       12,567                13,050     6,501             7,099
+                   25 to 34 years
+                                                                                                  ,763              15,975       10,097                10,099     5,666             5,877
+                   35 to 44 years
+                                                                                                  ,486              16,567       10,250                10,216     6,236             6,351
+                   45 to 54 years
+                                                                                                   819              10,812        6,795                 6,841     4,024             3,971
+                55 to 64 years
+                                                                                                  ,515               6,474        4,042                 4,027     2,473             2,447
+                   55 to 59 years
+                                                                                                  ,304               4,338        2,753                 2,814     1,551             1,524
+                   60 to 64 years
+                                                                                                  ,908               2,827        1,879                 1,888     1,029                940
+                65 years and over
+
+            Nonagricultural industries . .                                                   82,095                 83,724       50,414                50,878    31,681            32,846
+              16 to 19 years                                                                  8,074                  8,172        4,426                 4,429     3,648             3,744
+                 16 to 17 years                                                               3,442                  3,484        1,916                 1,880     1,526             1,604
+                 18 to 19 years                                                               4,632                  4,688        2,510                 2,549     2,123             2,139
+              20 to 24 years                                                                 11,812                 11,988        6,664                 6,621     5,148             5,368
+              25 to 54 years                                                                 49,543                 50,940       31,547                31,979    17,995            18,961
+                 25 to 34 years                                                              18,589                 19,631       12,188                12,625     6,401             7,006
+                 35 to 44 years                                                              15,204                 15,440        9,666                 9,692     5,538             5,748
+                 45 to 54 years                                                              15,750                 15,869        9,693                 9,662     6,056             6,207
+              55 to 64 years                                                                 10,185                 10,184        6,269                 6,310     3,916             3,873
+                 55 to 59 years                                                               6,172                  6,136        3,768                 3,746     2,404             2,390
+                                                                                              4,013                  4,048        2,501                 2,565     1,512             1,483
+                 60 to 64 years
+                                                                                              2,481                  2,440        1,507                 1,540        974              901
+              65 years and over
+
+            Agriculture                                                                       3,825                  3,851         3,072                3,165       753                  686
+              16 to 19 years                                                                    602                    646           476                  530       126                  116
+                  16 to 17 years                                                                398                    392           320                  318        78                   73
+                  18 to 19 years                                                                204                    255           157                  212        48                   43
+              20 to 24 years                                                                    390                    438           332                  370        58                   68
+              25 to 54 years                                                                  1,773                  1,751         1,366                1,386       407                  366
+                  25 to 34 years                                                                478                    518           379                  425        99                   93
+                 35 to 44 years                                                                 559                    535           431                  407       128                  129
+                 45 to 54 years                                                                  736                   698           556                  554       180                  144
+              55 to 64 years                                                                    633                    628           525                  530       108                   98
+                  55 to 59 years                                                                 343                    338          274                  281        69                   57
+                  60 to 64 years                                                                290                     290          251                  249        39                   41
+              65 years and over                                                                 427                     387          372                  348        55                   39
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

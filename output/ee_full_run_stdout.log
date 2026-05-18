@@ -1,0 +1,388 @@
+[001/192] 1967-01
+  ok: clean
+[002/192] 1967-02
+  ok: clean
+[003/192] 1967-03
+  ok: clean
+[004/192] 1967-04
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.021
+[005/192] 1967-05
+  ok: clean
+[006/192] 1967-06
+  ok: clean
+[007/192] 1967-07
+  ok: clean
+[008/192] 1967-08
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[009/192] 1967-09
+  ok: clean
+[010/192] 1967-10
+  ok: clean
+[011/192] 1967-11
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.870
+[012/192] 1967-12
+  failed: missing required categories: professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.867
+[013/192] 1968-01
+  ok: clean
+[014/192] 1968-02
+  failed: missing required categories: managers, sales, routine+nonroutine coverage of printed total net of farm workers is 0.829
+[015/192] 1968-03
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[016/192] 1968-04
+  failed: missing required categories: professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.853
+[017/192] 1968-05
+  ok: clean
+[018/192] 1968-06
+  ok: clean
+[019/192] 1968-07
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[020/192] 1968-08
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.871
+[021/192] 1968-09
+  ok: clean
+[022/192] 1968-10
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[023/192] 1968-11
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.017
+[024/192] 1968-12
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.021
+[025/192] 1969-01
+  ok: clean
+[026/192] 1969-02
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.024
+[027/192] 1969-03
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.027
+[028/192] 1969-04
+  failed: missing required categories: professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.851
+[029/192] 1969-05
+  failed: missing required categories: professional_technical, service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.722, routine share is implausible: 0.850
+[030/192] 1969-06
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.015
+[031/192] 1969-07
+  failed: missing required categories: clerical, managers, professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.574, routine share is implausible: 0.782
+[032/192] 1969-08
+  failed: missing required categories: clerical, craft, managers, nonfarm_laborers, operatives_except_transport, professional_technical, sales, service_workers, transport_equipment_operatives, routine+nonroutine total is implausible: 0 thousand, routine share is implausible: nan
+[033/192] 1969-09
+  failed: missing required categories: professional_technical, service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.743, routine share is implausible: 0.857
+[034/192] 1969-10
+  failed: missing required categories: clerical, managers
+[035/192] 1969-11
+  failed: missing required categories: sales, routine+nonroutine coverage of printed total net of farm workers is 0.937
+[036/192] 1969-12
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.025
+[037/192] 1970-01
+  ok: clean
+[038/192] 1970-02
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[039/192] 1970-03
+  ok: clean
+[040/192] 1970-04
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.029
+[041/192] 1970-05
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.025
+[042/192] 1970-06
+  ok: clean
+[043/192] 1970-07
+  ok: clean
+[044/192] 1970-08
+  failed: block may be a persons-at-work or hours table, missing required categories: clerical, craft, managers, nonfarm_laborers, operatives_except_transport, professional_technical, sales, service_workers, transport_equipment_operatives, routine+nonroutine total is implausible: 0 thousand, routine share is implausible: nan
+[045/192] 1970-09
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.191
+[046/192] 1970-10
+  failed: block may be a persons-at-work or hours table, missing required categories: managers, sales
+[047/192] 1970-11
+  failed: professional_technical value 37932 is outside 6000-30000, missing required categories: clerical, craft, managers, nonfarm_laborers, operatives_except_transport, sales, service_workers, transport_equipment_operatives, routine share is implausible: 0.000
+[048/192] 1970-12
+  failed: operatives_total value 956297 is outside 7000-25000, missing required categories: craft, nonfarm_laborers, service_workers, routine+nonroutine coverage of printed total net of farm workers is 13.133, routine+nonroutine total is implausible: 994754 thousand, routine share is implausible: 0.980
+[049/192] 1971-01
+  failed: missing required categories: nonfarm_laborers, operatives_except_transport, service_workers, transport_equipment_operatives, routine+nonroutine coverage of printed total net of farm workers is 0.638
+[050/192] 1971-02
+  failed: missing required categories: clerical, craft, managers, nonfarm_laborers, professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.324, routine+nonroutine total is implausible: 24663 thousand
+[051/192] 1971-03
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[052/192] 1971-04
+  failed: missing required categories: managers, sales, service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.692, routine share is implausible: 0.785
+[053/192] 1971-05
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.822
+[054/192] 1971-06
+  failed: missing required categories: clerical, managers, professional_technical, sales, service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.269, routine+nonroutine total is implausible: 20574 thousand, routine share is implausible: 1.000
+[055/192] 1971-07
+  ok: clean
+[056/192] 1971-08
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[057/192] 1971-09
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.860
+[058/192] 1971-10
+  needs_review: block is seasonally adjusted rather than the printed current-month level table
+[059/192] 1971-11
+  ok: clean
+[060/192] 1971-12
+  failed: missing required categories: clerical, service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.684
+[061/192] 1972-01
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.022
+[062/192] 1972-02
+  ok: clean
+[063/192] 1972-03
+  ok: clean
+[064/192] 1972-04
+  ok: clean
+[065/192] 1972-05
+  ok: clean
+[066/192] 1972-06
+  ok: clean
+[067/192] 1972-07
+  ok: clean
+[068/192] 1972-08
+  ok: clean
+[069/192] 1972-09
+  ok: clean
+[070/192] 1972-10
+  ok: clean
+[071/192] 1972-11
+  ok: clean
+[072/192] 1972-12
+  ok: clean
+[073/192] 1973-01
+  ok: clean
+[074/192] 1973-02
+  ok: clean
+[075/192] 1973-03
+  ok: clean
+[076/192] 1973-04
+  ok: clean
+[077/192] 1973-05
+  ok: clean
+[078/192] 1973-06
+  ok: clean
+[079/192] 1973-07
+  failed: missing required categories: craft, routine+nonroutine coverage of printed total net of farm workers is 0.731
+[080/192] 1973-08
+  ok: clean
+[081/192] 1973-09
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.800
+[082/192] 1973-10
+  ok: clean
+[083/192] 1973-11
+  ok: clean
+[084/192] 1973-12
+  failed: missing required categories: craft, routine+nonroutine coverage of printed total net of farm workers is 0.865
+[085/192] 1974-01
+  ok: clean
+[086/192] 1974-02
+  failed: missing required categories: managers, routine+nonroutine coverage of printed total net of farm workers is 0.895
+[087/192] 1974-03
+  ok: clean
+[088/192] 1974-04
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.969
+[089/192] 1974-05
+  ok: clean
+[090/192] 1974-06
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.845
+[091/192] 1974-07
+  ok: clean
+[092/192] 1974-08
+  ok: clean
+[093/192] 1974-09
+  failed: missing required categories: clerical, craft, managers, nonfarm_laborers, operatives_except_transport, professional_technical, sales, service_workers, transport_equipment_operatives, routine+nonroutine total is implausible: 0 thousand, routine share is implausible: nan
+[094/192] 1974-10
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.937
+[095/192] 1974-11
+  failed: missing required categories: clerical, craft, managers
+[096/192] 1974-12
+  ok: clean
+[097/192] 1975-01
+  failed: white_collar_workers value 140386 is outside 20000-70000, missing required categories: clerical, craft, managers, professional_technical, sales, routine+nonroutine coverage of printed total net of farm workers is 0.365, routine+nonroutine total is implausible: 29709 thousand
+[098/192] 1975-02
+  ok: clean
+[099/192] 1975-03
+  ok: clean
+[100/192] 1975-04
+  ok: clean
+[101/192] 1975-05
+  failed: missing required categories: clerical, routine+nonroutine coverage of printed total net of farm workers is 0.812
+[102/192] 1975-06
+  ok: clean
+[103/192] 1975-07
+  ok: clean
+[104/192] 1975-08
+  ok: clean
+[105/192] 1975-09
+  ok: clean
+[106/192] 1975-10
+  failed: missing required categories: nonfarm_laborers, routine+nonroutine coverage of printed total net of farm workers is 0.949
+[107/192] 1975-11
+  ok: clean
+[108/192] 1975-12
+  ok: clean
+[109/192] 1976-01
+  ok: clean
+[110/192] 1976-02
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.805
+[111/192] 1976-03
+  ok: clean
+[112/192] 1976-04
+  ok: clean
+[113/192] 1976-05
+  ok: clean
+[114/192] 1976-06
+  ok: clean
+[115/192] 1976-07
+  ok: clean
+[116/192] 1976-08
+  ok: clean
+[117/192] 1976-09
+  ok: clean
+[118/192] 1976-10
+  ok: clean
+[119/192] 1976-11
+  ok: clean
+[120/192] 1976-12
+  ok: clean
+[121/192] 1977-01
+  ok: clean
+[122/192] 1977-02
+  ok: clean
+[123/192] 1977-03
+  ok: clean
+[124/192] 1977-04
+  ok: clean
+[125/192] 1977-05
+  ok: clean
+[126/192] 1977-06
+  ok: clean
+[127/192] 1977-07
+  ok: clean
+[128/192] 1977-08
+  ok: clean
+[129/192] 1977-09
+  failed: missing required categories: managers, routine+nonroutine coverage of printed total net of farm workers is 0.890
+[130/192] 1977-10
+  failed: missing required categories: professional_technical, sales, routine+nonroutine coverage of printed total net of farm workers is 0.779
+[131/192] 1977-11
+  ok: clean
+[132/192] 1977-12
+  ok: clean
+[133/192] 1978-01
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.948
+[134/192] 1978-02
+  ok: clean
+[135/192] 1978-03
+  ok: clean
+[136/192] 1978-04
+  ok: clean
+[137/192] 1978-05
+  ok: clean
+[138/192] 1978-06
+  ok: clean
+[139/192] 1978-07
+  failed: missing required categories: professional_technical, sales, routine+nonroutine coverage of printed total net of farm workers is 0.785
+[140/192] 1978-08
+  ok: clean
+[141/192] 1978-09
+  ok: clean
+[142/192] 1978-10
+  ok: clean
+[143/192] 1978-11
+  ok: clean
+[144/192] 1978-12
+  needs_review: blue_collar_workers value 132110 is outside 15000-60000, routine+nonroutine coverage of printed total net of farm workers is 2.070, routine+nonroutine total is implausible: 193444 thousand, routine share is implausible: 0.805
+[145/192] 1979-01
+  ok: clean
+[146/192] 1979-02
+  ok: clean
+[147/192] 1979-03
+  ok: clean
+[148/192] 1979-04
+  ok: clean
+[149/192] 1979-05
+  ok: clean
+[150/192] 1979-06
+  ok: clean
+[151/192] 1979-07
+  ok: clean
+[152/192] 1979-08
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.871
+[153/192] 1979-09
+  ok: clean
+[154/192] 1979-10
+  ok: clean
+[155/192] 1979-11
+  ok: clean
+[156/192] 1979-12
+  ok: clean
+[157/192] 1980-01
+  ok: clean
+[158/192] 1980-02
+  failed: missing required categories: professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.835
+[159/192] 1980-03
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.780
+[160/192] 1980-04
+  ok: clean
+[161/192] 1980-05
+  ok: clean
+[162/192] 1980-06
+  ok: clean
+[163/192] 1980-07
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.771
+[164/192] 1980-08
+  ok: clean
+[165/192] 1980-09
+  failed: missing required categories: professional_technical, routine+nonroutine coverage of printed total net of farm workers is 0.838
+[166/192] 1980-10
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 0.845
+[167/192] 1980-11
+  failed: missing required categories: service_workers, routine+nonroutine coverage of printed total net of farm workers is 0.857
+[168/192] 1980-12
+  needs_review: routine+nonroutine coverage of printed total net of farm workers is 1.832
+[169/192] 1981-01
+  failed: no occupation table candidate found
+[170/192] 1981-02
+  failed: no occupation table candidate found
+[171/192] 1981-03
+  failed: no occupation table candidate found
+[172/192] 1981-04
+  failed: no occupation table candidate found
+[173/192] 1981-05
+  failed: no occupation table candidate found
+[174/192] 1981-06
+  failed: no occupation table candidate found
+[175/192] 1981-07
+  failed: no occupation table candidate found
+[176/192] 1981-08
+  failed: no occupation table candidate found
+[177/192] 1981-09
+  ok: clean
+[178/192] 1981-10
+  failed: no occupation table candidate found
+[179/192] 1981-11
+  failed: no occupation table candidate found
+[180/192] 1981-12
+  failed: no occupation table candidate found
+[181/192] 1982-01
+  failed: no occupation table candidate found
+[182/192] 1982-02
+  failed: no occupation table candidate found
+[183/192] 1982-03
+  failed: no occupation table candidate found
+[184/192] 1982-04
+  failed: no occupation table candidate found
+[185/192] 1982-05
+  failed: no occupation table candidate found
+[186/192] 1982-06
+  failed: no occupation table candidate found
+[187/192] 1982-07
+  failed: no occupation table candidate found
+[188/192] 1982-08
+  ok: clean
+[189/192] 1982-09
+  failed: no occupation table candidate found
+[190/192] 1982-10
+  needs_review: block may be a persons-at-work or hours table
+[191/192] 1982-11
+  failed: no occupation table candidate found
+[192/192] 1982-12
+  ok: clean
+Wrote C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_extracted\employment_monthly_1967_1982.csv
+Wrote C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_extracted\ee_extraction_audit.csv
+Wrote C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_extracted\ee_occupation_monthly_raw.csv
+Wrote C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\employment_monthly_extended.csv

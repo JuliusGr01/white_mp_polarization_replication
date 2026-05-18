@@ -1,0 +1,108 @@
+Issue month: 1971-02
+Reference month: 1971-01
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/1970-1974/empl_021971.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_021971.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_021971.txt
+Warnings: missing required categories: clerical, craft, managers, nonfarm_laborers, professional_technical; routine+nonroutine coverage of printed total net of farm workers is 0.324; routine+nonroutine total is implausible: 24663 thousand
+Error: (none)
+
+Best candidate page: 6
+Candidate lines: 263-350
+Candidate score: 63.8
+
+Extracted category values (thousands):
+  farm_workers: 1729 (line 333: Farm workers)
+  operatives_total: 13298 (line 313: Operatives and kindred workers....      13,298      967      13,951     1,026      -653          -59)
+  sales: 2747 (line 293: Sales workers                            4,722      189       4,744      197        -22       -8)
+  service_workers: 8618 (line 326: Service workers, excluding private)
+
+Candidate block:
+                                                 Employment and unemployment by detailed occupation, March 1970
+                                                                        (In thousands)
+
+
+                                    Occupation                     1970 Census system   L960 Census systeml/    Difference
+                                                                   Employed Unemployed Employed Unemployed Employed Unemployed
+
+                                    Total                           77,916    3,456      77,915    3,456          1          - -
+
+
+                         White-collar workers
+                           Professional, technical, and
+                            kindred workers                         11,104      219      11,271      211       -167           8
+                                                                     1,211       39       1,181       36         30           3
+                              Medical workers—salaried               1,336       14       1,348       18        -12          -4
+                              Medical workers—self-employed..          363        3         360        3          3          —
+
+                              Teachers, except college........       2,902       23       2,707       25        195          -2
+                              Other professional workers—
+                                                                     4,864      136       5,142      125       r278          11
+                              Other professional workers—self-
+                                                                       428        3         534         3      -106          —
+
+                           Managers and administrators, except
+                                                                     8,452       96       8,325      100        127          -4
+                                                                     6,232       71       6,067       75        165          -4
+                              Self-employed-*retall trade            1,080       14       1,082       14         -2          - -
+
+                              Self-employed--other.                  1,140       11       1,176       11        -36          —
+
+                            Sales workers                            4,722      189       4,744      197        -22       -8
+                              Retail sales workers                   2,747      162       2,899      173       -152      -11
+                              Other sales workers                    1,974       27       1,845       24        129        3
+                            Clerical and kindred workers            13,455      495      13,674      507       -219      -12
+                              Stenographers and secretaries...       3,447      110       3,428      109         19        1
+                              Other clerical and kindred
+                                                                    10,008      385      10,245       398      -237      -13
+
+                         Blue-collar workers
+                           Craftsmen and kindred workers             9,966      430      10,012       425       -46            5
+                                                                        811     108         803       104         8            4
+                              Other construction craftsmen....       1,895      157       1,880       155        15            2
+                                                                     1,426        31      1,458         35      -32           -4
+                                                                        653       11        612         11       41           - -
+
+                                                                        813       17        835         17      -22           —
+
+                                                                     1,549        32      1,935         47     -386          -15
+                                                                        674       25        629         19       45            6
+                                                                     2,145        50      1,860         37      285           13
+                            Operatives and kindred workers....      13,298      967      13,951     1,026      -653          -59
+                                                                     2,408      123       2,448       134       -40          -11
+                                                                        137        5        164          9      -27           -4
+                              Automobile equipment operatives.          507       46        495         42       12            4
+                              Other durable goods operatives..       4,529      342       4,375       322       154           20
+                              Nondurable goods operatives            3,647      317       3,787       330      -140          -13
+                              Non-manufacturing industries....       2,071      133       2,682        189     -611          -56
+                                                                     3,798      435       3,379       387       419           48
+                                                                        686      134        691        131       -5            3
+                                                                      1,140      108        982         89      158           19
+                                                                     1,972       193      1,705        166      267           27
+
+                          Service workers
+                            Service workers, excluding private
+                                                                      8,618      471      8,051       450       567            21
+                               Protective service workers               944       23        928        25        16            -2
+                                                                      2,122      159      2,208       163       -86            -4
+                                                                      5,552      289    . 4,915       263       637            26
+                                                                      1,640       64      1,647        66        -7            -2
+
+                          Farm workers
+                            Farmers and farm managers                 1,729        6       1,733         4        -4                2
+                            Farm laborers and farm foremen....        1,135       85       1,129        83         6                2
+                                                                        768       81         761        79         7                2
+                                                                        367        4         368         4        -1               ——
+
+
+
+                               If These data differ from statistics already published for March 1970, because the composite
+                            timating procedures were not used in order to permit a direct comparison with the 1970 Census
+                          code estimates.
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

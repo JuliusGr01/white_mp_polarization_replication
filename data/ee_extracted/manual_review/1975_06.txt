@@ -1,0 +1,7 @@
+Month: 1975-06
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/empl_061975.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_061975.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_061975.txt
+Warnings: (none)
+Error: Failed to download https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/empl_061975.pdf: HTTP Error 403: Forbidden

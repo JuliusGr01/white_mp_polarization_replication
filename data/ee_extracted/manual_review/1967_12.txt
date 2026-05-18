@@ -1,0 +1,116 @@
+Issue month: 1967-12
+Reference month: 1967-11
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1960s/empl_121967.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_121967.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_121967.txt
+Warnings: missing required categories: professional_technical; routine+nonroutine coverage of printed total net of farm workers is 0.867
+Error: (none)
+
+Best candidate page: 42
+Candidate lines: 3076-3165
+Candidate score: 129.8
+
+Extracted category values (thousands):
+  blue_collar_workers: 26246 (line 3099: Blue-collar workers                               26,952   26,246   25,331   24,778   24,048   23,683   24,067   24,009   23,356)
+  clerical: 11129 (line 3096: Clerical workers                                11,812   11,129   10,629   10,237   10,065    9,828    9,759    9,297    9,104)
+  craft: 9222 (line 3100: Craftsmen and foremen.                           9,591    9,222    8,986    8,925    8,678    8,623    8,560    8,561    8,469)
+  farm_workers: 4057 (line 3108: Farm workers                                       3,667    4,057    4,219    4,372    4,639    4,917    5,163    5,327    5,338)
+  managers: 7340 (line 3095: Managers, officials, and proprietors . . . .     7,403    7,340    7,451    7,293    7,408    7,119    7,067    6,935    6,785)
+  nonfarm_laborers: 3688 (line 3102: Nonfarm laborers                                 3,532    3,688    3,479    3,397    3,391    3,348    3,557    3,635    3,495)
+  operatives_total: 13336 (line 3101: Operatives                                      13,829   13,336   12,866   12,456   11,979   11,712   11,950   11,813   11,392)
+  sales: 4497 (line 3097: Sales workers                                    4,540    4,497    4,237    4,150    4,118    4,232    4,216    4,199    3,977)
+  service_workers: 8936 (line 3104: Service workers                                    9,212    8,936    8,890    8,670    8,383    8,261    8,031    7,720    7,515)
+  white_collar_workers: 31849 (line 3093: White-collar workers                              33,065   31,849   30,866   29,943   29,632   28,884   28,516   27,574   26,827)
+
+Candidate block:
+                                                       42
+                     H O U S E H O L D DATA
+                     EMPLOYMENT B Y OCCUPATION AND SEX
+                                                                                         SPECIAL SERIES
+                                                                      Employed persons by major occupation group and sex
+
+
+                              Occupation group and sex                  1966     1965     1964     1963     1962     1961     1960     1959     1958
+
+
+
+
+                                      TOTAL
+
+                          Total employed (thousands)                   72,896   71,088   69,306   67,763   66,704   65,745   65,777   64,630   63,036
+
+
+                     White-collar workers                              33,065   31,849   30,866   29,943   29,632   28,884   28,516   27,574   26,827
+                       Professional and t e c h n i c a l .             9,310    8,883    8,550    8,263    8,043    7,705    7,474    7,143    6,961
+                       Managers, officials, and proprietors . . . .     7,403    7,340    7,451    7,293    7,408    7,119    7,067    6,935    6,785
+                       Clerical workers                                11,812   11,129   10,629   10,237   10,065    9,828    9,759    9,297    9,104
+                       Sales workers                                    4,540    4,497    4,237    4,150    4,118    4,232    4,216    4,199    3,977
+
+                     Blue-collar workers                               26,952   26,246   25,331   24,778   24,048   23,683   24,067   24,009   23,356
+                       Craftsmen and foremen.                           9,591    9,222    8,986    8,925    8,678    8,623    8,560    8,561    8,469
+                       Operatives                                      13,829   13,336   12,866   12,456   11,979   11,712   11,950   11,813   11,392
+                       Nonfarm laborers                                 3,532    3,688    3,479    3,397    3,391    3,348    3,557    3,635    3,495
+
+                     Service workers                                    9,212    8,936    8,890    8,670    8,383    8,261    8,031    7,720    7,515
+                        Private household workers                       1,903    1,957    2,040    2,029    2,023    2,036    1,980    1,966    1,991
+                       Other service workers                            7,309    6,980    6,851    6,641    6,360    6,226    6,051    5,754    5,524
+
+                     Farm workers                                       3,667    4,057    4,219    4,372    4,639    4,917    5,163    5,327    5,338
+                        Farmers and farm managers                       2,091    2,244    2,320    2,396    2,595    2,711    2,781    3,019    3,083
+                        Farm laborers and foremen                       1,576    1,814    1,899    1,976    2,045    2,206    2,383    2,309    2,255
+
+                                           MALE
+
+                          Total employed (thousands)                   46,919   46,340   45,474   44,657   44,177   43,656   43,904   43,466   42,423
+
+
+                     White-collar workers . . .                        18,096   17,742   17,482   17,053   17,005   16,604   16,409   15,953   15,468
+                       Professional and technical                       5,840    5,602    5,438    5,312    5,175    4,955    4,768    4,583    4,420
+                      Managers, officials, and proprietors . . . .      6,236    6,229    6,342    6,180    6,276    6,003    5,967    5,858    5,751
+                                                                        3,349    3,271    3,196    3,108    3,119    3,100    3,139    2,976    2,898
+                       S a l e s workers                                2,671    2,640    2,506    2,453    2,435    2,546    2,535    2,536    2,399
+
+                     Blue-collar workers                               22,514   22,103   21,353   20,956   20,367   20,075   20,438   20,444   19,849
+                       Craftsmen and foremen                            9,336    8,951    8,736    8,683    8,455    8,407    8,338    8,349    8,244
+                       Operatives....                                   9,754    9,573    9,225    8,966    8,608    8,396    8,622    8,558    8,207
+                       Nonfarm laborers                                 3,424    3,579    3,392    3,307    3,304    3,272    3,478    3,537    3,398
+
+                     Service workers                                    3,319    3,195    3,199    3,095    2,980    2,912    2,851    2,739    2,720
+                        Private household workers                          43       40       46       44       46       47       33       35       39
+                       Other service workers .                          3,276    3,155    3,153    3,051    2,934    2,865    2,818    2,704    2,681
+
+                     Farm workers                                       2,990    3,298    3,439    3,555    3,823    4,064    4,206    4,328    4,384
+                        Farmers and farm managers .                     1,968    2,112    2,187    2,265    2,463    2,581    2,670    2,899    2,960
+                        Farm laborers and foremen                       1,022    1,186    1,252    1,290    1,360    1,483    1,536    1,429    1,424
+
+                                     FEMALE
+
+                          Total employed (thousands)                   25,976   24,748   23,831   23,105   22,525   22,090   21,874   21,164   20,613
+
+
+                     White-collar workers                              14,971   14,105   13,383   12,889   12,625   12,280   12,106   11,620   11,360
+                       Professional and technical                       3,472    3,280    3,110    2,950    2,865    2,750    2,706    2,560    2,541
+                      Managers, officials, and proprietors . . . .      1,166    1,110    1,109    1,113    1,132    1,116    1,099    1,077    1,034
+                       Clerical workers                                 8,463    7,858    7,433    7,129    6,946    6,728    6,620    6,321    6,206
+                      S a l e s workers                                 1,870    1,857    1,731    1,697    1,682    1,686    1,681    1,662    1,579
+
+                     Blue-collar workers                                4,438    4,143    3,980    3,822    3,680    3,608    3,629    3,565    3,506
+                       Craftsmen and foremen                              257      270      250      241      223      216      222      212      225
+                       Operatives                                       4,074    3,765    3,642    3,491    3,371    3,316    3,328    3,255    3,184
+                       Nonfarm laborers                                   107      108       88       90       86       76       79       98       97
+
+                     Service workers                                    5,893    5,742    5,693    5,575    5,403    5,350    5,180    4,981    4,793
+                       Private household workers. .                     1,861    1,917    1,994    1,985    1,977    1,989    1,947    1,931    1,952
+                       Other service workers                            4,032    3,825    3,699    3,590    3,426    3,361    3,233    3,050    2,841
+
+                     Farm workers                                         678      759      111      817      816      853      958      999      954
+                        Farmers and farm managers                         124      132      132      131      132      130      111      119      123
+                        Farm laborers and foremen                         554      627      645      686      684      723      847      880      831
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

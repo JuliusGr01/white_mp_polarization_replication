@@ -1,0 +1,101 @@
+Issue month: 1975-01
+Reference month: 1974-12
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/1975-1979/empl_011975.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_011975.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_011975.txt
+Warnings: white_collar_workers value 140386 is outside 20000-70000; missing required categories: clerical, craft, managers, professional_technical, sales; routine+nonroutine coverage of printed total net of farm workers is 0.365; routine+nonroutine total is implausible: 29709 thousand
+Error: (none)
+
+Best candidate page: 144
+Candidate lines: 14720-14798
+Candidate score: 47.5
+
+Extracted category values (thousands):
+  farm_workers: 3027 (line 14786: Farm workers                                         3,027            3,048     2,228)
+  nonfarm_laborers: 4312 (line 14774: Nonfarm laborers                                         4,312            4,380     3,033)
+  operatives_except_transport: 10972 (line 14766: Operatives, except transport                            10,972           10,627     5,886)
+  service_workers: 11128 (line 14779: Service workers                                     11,128           11,373     3,380)
+  transport_equipment_operatives: 3297 (line 14770: Transport equipment operatives                           3,297            3,292     2,962)
+  white_collar_workers: 140386 (line 14737: White-collar workers                             I 40,386             41,738    20,065)
+
+Candidate block:
+           HOUSEHOLD DATA                                                                                     148
+           ANNUAL AVERAGES
+
+                 18. Employed persons by occupational group, sex, and age
+              i thousands]
+
+                                                                                                                         ,                              j
+                                                                                              Mates, 20 years and over   , Females, 20 years and over       Males, 16-19 years   Females, 16-19 years
+
+                               Occupation
+
+                                                                    1.973            1.974     1973
+
+
+
+                TOTAL                                          j 84,409             85,93 6   47,946
+                                                               i
+              White-collar workers                             I 40,386             41,738    20,065
+
+           ProfosMon.i! and technical                              1 1 , 7 77       12,338     6,974
+            Health workers                                           1,939           2,082       721
+            Teachers, except college                                 2,916           2,9.57      873
+            Other professional ana technical                         6,922           7,299     5,379
+
+           Managers and adrnimstntrirs, except 'arm . . .           8,644       j    8,941     7,007
+            SijLrieci workers                                        ,81.5           7,131     5,554
+            Self unriployed workors in .-(.'tail trade         j      953              931       698
+            Self-employed workers, except n:iai' tr;ici' .     j      87 6             879       754
+
+           Sales we.-'ki'r*.                                   j    5,415            5,417     2,941
+            Roiail tr;i.:lf                                         3,074            3,072     1,014
+            Other industrie*:                                       2,342            2,344     1,928
+           Clerical woikeis                                        14,548       i 15,043       3,142
+            Stenographers, typists, and secreiurius   .   ..        4,206          4,330          63
+            Other clerical workers                                 10,342       |10,713        3,079
+
+              Blue-collar vorkers                                  29,869           29,776    22,273
+
+           Craft and kindred worker*;                              11,288           11,477    10,392
+             Carpenters                                             1,078            1,073     1,006
+             Construction Coft, r-xcepi carpenl:'!-.                2,357            2,353     2,223
+             Mechanics and repdircis                                2,903            2,955     2,741
+             Metal craft                                            1,159            1,206     1,104
+             ^Itjw-collar worker supervisors, not Hlsewhco
+                classified                                          1,460            1,457     1,343
+             Al: other                                              2,333            2,433     1,975
+           Operatives, except transport                            10,972           10,627     5,886
+            Durable goods manufacturing                             4,927            4,325     3,101
+            Nondurable goods manufacturing                          3,653            3,457     1,395
+            Other industries                                        2,392            2,845     1,389
+           Transport equipment operatives                           3,297            3,292     2,962
+             Drivers, motor vehicles                                2,7 98           2,787     2,499
+            All other                                                 498              506       463
+
+           Nonfarm laborers                                         4,312            4,380     3,033
+            Construction                                              854              808       675
+            Manufacturing                                           1,100            1,111       837
+            Other industries                                        2,358            2,461     1,522
+
+               Service workers                                     11,128           11,373     3,380
+           Private household workers                                1,353            1,228       13
+           Service workers, except private household . . .          9,775           10,14.5   3,367
+            Food service workers                                    3,402            3,538      624
+            Protective service workers                              1,158            1,254    1,083
+            Al! other                                               5,215            5,353    1,660
+
+               Farm workers                                         3,027            3,048     2,228
+           Farmers and farm managers                                1,664            1,643     1,545
+
+           Farm laborers and supervisors                            1,363            1,405       683
+            Paid workers                                               9.56          1,029       643
+            Unpaid family workers                                     407              376        40
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

@@ -1,0 +1,113 @@
+Issue month: 1974-11
+Reference month: 1974-10
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1970s/1970-1974/empl_111974.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_111974.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_111974.txt
+Warnings: missing required categories: clerical, craft, managers
+Error: (none)
+
+Best candidate page: 31
+Candidate lines: 3148-3236
+Candidate score: 92.5
+
+Extracted category values (thousands):
+  farm_workers: 3048 (line 3223: Farm workers                                          3,091       3,048       2,271         2,242       I          492           454              284           299            43              52)
+  nonfarm_laborers: 4462 (line 3210: Nonfarm laborers                                        4,364        4,462       3,069          3,1.00      |         2 54          318              976           982            65              62)
+  operatives_except_transport: 10683 (line 3200: Operatives, except transport                            11,298      10,683       6,063          .,80 5     i       4,124          3,842              799           7 38         311             299)
+  professional_technical: 12634 (line 3167: Professional and technical                              12,280      12,634       7,346          7,42 1             4,768          5,085               80            56            86              71)
+  sales: 5502 (line 3177: Sales workers                                            5,414       5,502       2,862          2,974              1,958          1,904        I     22 6          2 !9         368              404)
+  service_workers: 11612 (line 3215: Service workers                                      11,303      11,612       3,379          3,508      |       6,162         6,273               663           692        1,098           1 , 1 39)
+  transport_equipment_operatives: 3295 (line 3205: Transport equipment operatives                           3,382       3,295       3,004         2,931       !          197           176              178           177                3           11)
+  white_collar_workers: 42215 (line 3165: White-collar workers                                 41,181      42,215      20,427        20,718              18,448        19,218               615    I      584    I   1,691           i,69 5)
+
+Candidate block:
+                                                                                                          31                                                                 HOUSEHOLD DATA
+
+              A-20.        Employed persons by occupational group, sex, and age
+              I.In thousands|
+
+
+
+                                                                                             Males, 20 years and over        ' Females, 20 years and over        Males, 16-19 years    ;   Females, 16-19 years
+
+                                 Occupation
+
+                                                                      Oct.        Oct.        Oct.           Oct.               Oct.          Oct.               Oct.    I   Oct.          Oct.        |   Oct.
+                                                                      1973        1974        1973           1974               1973          19 74              1973                        ri<       j   19 7/.
+
+
+                                                                     85,994      86,847      48,6 54       48,898              3O,15J        30,7 57            3,956    I   3,89b         3,233       i 3,/9/
+
+                White-collar workers                                 41,181      42,215      20,427        20,718              18,448        19,218               615    I      584    I   1,691           i,69 5
+
+             Professional and technical                              12,280      12,634       7,346          7,42 1             4,768          5,085               80            56            86              71
+              Health workers                                          2,003       2,129         756            792              1,222          1,308                9             4            16              2 5
+              Teachers, except college                                3,089       3,107         962            982              2,100          2, 1 00                            8            24              18
+              Other professional and technical                        7,188       7,398       5,628          5,647              1,446          1,67 7                            44            46              28
+
+             Manayers and administrator, except farm . .              8,828       8,943       7,161          7,246              1,610          1 ,626              48                              9
+              Salai ied workers                                       6,918       7,194       5,641          5,850              .1,22 7        1,2 79              47                              3
+              Sclf-«rno!oyed workers in lotaH trade . . . .             991         91.7        720            681,                264           2 30               2
+              Self fir-ployed workers, except retail trad--:            919         832         800            714                 118
+
+             Sales workers                                            5,414       5,502       2,862          2,974              1,958          1,904        I     22 6          2 !9         368              404
+              Beta.I trade                                            3,124       3,1 52      1,016          1 ,043             1 , 588        1,552        :     175           1 77         34 3              J80
+              Other industries                                   j    2,290       2 , 3 50    1 ,846         1,931                370             3 52                            4/          2'i               24
+                                                                                                                                                                   51
+
+
+             Clerical ;vorkeis                                   ! 14,659        15,137       3,058          3,077             10,113        10,602               2 61          2 63       1,227           1,19 )
+              Steno jjopherx, typists, and secretaries   . ..       4,3 58        4,424          48             59      ;       3,888         3,960                  6                       415             403
+              Other clerical workers                               10,301        10,713       3,010          3,018      ;       6,22 5        6,642               2 55          2 61         812             792
+
+                Blue-collar vorkers                                  30,421    j 29,972      22,576        22,430       j       3,049         4,812             2,39^        2,32 3          401              407
+                                                                                                                        i
+             Cra't aiKi k.:id'-<-;<i work'HA                         11,377      1.1,532     10,440        10,594       !          474           476              441           426            21              '56
+              Carpenters                                              1,114       1,096       1 ,007        1,040       !           13             1               92            36                            --
+                                                                                                                        ;
+              Construction cra't. except ca; :u;riM-is . . . .        2,419       2 , 542     2,270         2,386                   24            20              120           1 33               6
+              Mechanics and nspairers                                 2,889       2,855       2,732         2,710       !           28            20              127           126                1           __
+              Metal cratt                                             1,153       1,208       1,106         1,157       !           25            12               20            37                1            2
+              Blfie fol'dr woiker suptM visors, not clsewht'M
+                 Clr<:,S"iHd                                          1,490       1,453       1,371          1,311      i                        126                8                          __               4
+                                                                                                                                   111                                           12
+              Ai! otiK-!-                                             2,313       2,377       1,953          1,991      |          2 72          297               74            62            13              27
+
+             Operatives, except transport                            11,298      10,683       6,063          .,80 5     i       4,124          3,842              799           7 38         311             299
+              Durable goods manufacturing                             5,159       4,850       3,284          3.081      !       1,485          1, 392             2 63          267          1.2 7            1 1 1
+              Nondurable goods manufacturing                          3,673       3,339       1,3 31         1,285       |      2,042          1,799              170           135          130              120
+              Other industries                                        2,466       2,494       1,448          1,439      i          597           651              366           336            54               68
+
+             Transport equipment operatives                           3,382       3,295       3,004         2,931       !          197           176              178           177                3           11
+               Drivers, motor vehicles                                2,869       2,781       2,529         2,472       J          185           166              151           13 5               4            8
+              All other                                                  513         514        475           459       i           12            10               27            42            --               3
+                                                                                                                         ]
+                                                                                                                         i
+             Nonfarm laborers                                        4,364        4,462       3,069          3,1.00      |         2 54          318              976           982            65              62
+              Construction                                             811          804          654            647     i             8            4              149           1 53
+              Manufacturing                                          1,146        1,124          826            844     i          114           146              1.89          12 6           17               8
+              Other industries                                       2,407        2,533       1, 590         1,609      j          132           168              638           704            47              52
+                                                                                                                        j
+                Service workers                                      11,303      11,612       3,379          3,508      |       6,162         6,273               663           692        1,098           1 , 1 39
+
+             Private household workers                               1,383        1,183           22             20     !       1,122            896                 5           11          2 34            2 55
+             Service workers, except private household .             9,920       10,430       3,357          3,488      j       5,040         5,377               658           680          864             884
+              Food service workers                                   3,499        3,7 54        616            680      I       1,9 30        2,087               392           390          561             59 7
+              Protective service workers                             1,136        1,279       1,071          1,153      j           50           90                 13           30            3                6
+              All other                                              5,285        5,397       1,670          1,655      !       3,060         3,200               2 53          260          300             281
+
+                Farm workers                                          3,091       3,048       2,271         2,242       I          492           454              284           299            43              52
+
+             Farmers und farm. man.igti:.                             1,658       1,633       1, 543         1,53 5 I               93             85              18            13                3           --
+                                                                                                                         j
+             Farm laborers and supervisors                            1,433       1,415          728            707     !          398           368              266           287            40              53
+              Paid workers                                            1,012       1,038          690            669     |          120           139              171           201            30              30
+              Unpaid family workers                                     421,        377           38             38     |          278           229               95            86            10              23
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

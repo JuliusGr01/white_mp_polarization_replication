@@ -1,0 +1,112 @@
+Issue month: 1967-08
+Reference month: 1967-07
+Status: needs_review
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1960s/empl_081967.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_081967.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_081967.txt
+Warnings: block is seasonally adjusted rather than the printed current-month level table
+Error: (none)
+
+Best candidate page: 39
+Candidate lines: 3111-3195
+Candidate score: 110.5
+
+Extracted category values (thousands):
+  blue_collar_workers: 27445 (line 3183: Blue-collar workers                            27, 445 27,375 26,959 26,971 27,230 27,546 27,377 27,204 26,827 26,710 26,851 27,017 27,025)
+  clerical: 12238 (line 3181: Clerical workers                              12, 23812,260     12,290 12,163 11,995 12,093 12,197 12,273 12,338 12,048 11,938 12,014 11,816)
+  craft: 9766 (line 3184: Craftsmen and foremen                         9,766 9,736    9,796 9,863 10,032 10,044 10,010 9,799 9,683 9,609 9,637 9,710 9,610)
+  farm_workers: 3550 (line 3188: Farmers and farm laborers           ,           3,550 3,427      3,382    3,568    3,606    3,589   3,754   3,663   3,622   3,483     3,578   3,633    3,566)
+  managers: 7579 (line 3180: Managers, officials, and proprietor!           7,579 7,662       7,416 7,297 7,226 7,225 7,117 7,269 7,568 7,444 7,552 7,573 7,517)
+  nonfarm_laborers: 3655 (line 3186: Nonfarm laborers                              3,655 3,642 3,475 3,501 3,422 3,543 3,493 3,494 3,367 3,377 3,534 3,575 3,602)
+  operatives_total: 14024 (line 3185: Operatives                                   14, 024 13,997 13,688 13,607 13,776 13,959 13,874 13,911 13,777 13,724 13,680 13,732 13,813)
+  professional_technical: 9993 (line 3179: Professional and technical                     9,993 9,992       9,649 9,717 9,691 9,825 9,649 9,703 9,573 9,521 9,445 9,466 9,456)
+  sales: 4535 (line 3182: Sales workers                                  4,535 4,424       4,463 4,501 4,540 4,472 4,571 4,463 4,482 4,570 4,552 4,476 4,501)
+  service_workers: 9270 (line 3187: Service workers                                 9,270 9,240      9,093    9,419    9,408    9,534   9,387   9,456   9,475   9,396     9,274   9,129    9,163)
+  white_collar_workers: 34345 (line 3178: White-collar workers                           34, 345 34 ,338   33,818 33,678 33,452 33,615 33,534 33,708 33,961 33,583 33,487 33,529 33,290)
+
+Candidate block:
+                                                                                                                                           HOUSEHOLD DATA
+                                                                                                                                       SEASONALLY ADJUSTED
+
+
+                                                            A-32: Employed persons by age and sex, seasonally adjusted
+
+
+                                                                                           (In thousands)
+
+
+                                                                                              1967                                                 1966
+
+                                        Age and sex
+                                                                   July    June      May     Apr.      Mar.     Feb.            Dec.            Oct.      Sept.    Aug.    July
+
+
+                                            TOTAL
+
+                    16 years and over                             74,489   74,147 73,289 73,910 73,747 74,137 74,255 73,893 73,897 73,199 73,195 73,141                    72,846
+
+                      16 to 19 years                               5,730  5,897 5,594 5,816 5,903 5,844 5,900 5,828 5,908 5,654 5,546 5,897                                 5,847
+                        16 and 17 years                            2,322  2,363 2,201 2,346 2,478 2,399 2,389 2,427 2,362 2,233 2,229 2,311                                 2,277
+                        18 and 19 years                            3,402  3,491 3,358 3,470 3,465 3,495 3,516 3,487 3,537 3,386 3,304 3,587                                 3,568
+                      20 to 24 years                               8,604  8,571 8,420 8,418 8,348 8,355 8,228 8,126 8,062 7,977 7,916 7,937                                 7,937
+                      25 years and over                           60,128 59,678 59,300 59,650 59,516 60,000 60,125 59,886 59,925 59,593 59,761 59,294                      59,056
+                        25 to 54 years                            46,471 46,062 46,044 46,295 46,391 46,616 46,742 46,541 46,399 46,146 46,119 45,845                      45,739
+                        55 years and over                         13,563 13,627 13,244 13,360 13,224 13,450 13,468 13,405 13,544 13,332 13,417 13,394                      13,243
+
+                                            MALE
+
+                    16 years and over                             47,555 47,448 47,050 47,273 47,358 47,475 47,533 47,116 47,011 46,824 46,769 47,036                      46,917
+
+                      16 to 19 years                               3,217     3,292 3,128 3,181 3,348 3,239 3,306 3,218 3,300 3,170                            114 3,348     3,340
+                        16 and 17 years                            1,399     1,403 1,324 1,351 1,512 1,444 1,453 1,463 1,451 1,369                            347 1,405     1,399
+                        18 and 19 years                            1,810     1,856 1,766 1,825 1,854 1,852 1,867 1,802 1,858 1,790                            778 1,934     1,930
+                      20 to 24 years                               4,856     4,881 4,750 4,771 4,762 4,812 4,721 4,588 4,594 4,586                            570 4,592     4,575
+                      25 years and over                           39,468    39,266 39,177 39,306 39,276 39,474 39,493 39,259 39,098 39,085                    090 39,087   39,002
+                        25 to 54 years                            30,584    30,424 30,402 30,558 30,645 30,697 30,776 30,519 30,331 30,313                    302 30,311   30,264
+                        55 years and over                          8,860     8,870 8,738 8,717 8,670 8,777 8,758 8,767 8,805 8,741                            749 8,738     8,715
+
+                                            FEMALE
+
+                    16 years and over                             26,934   26,699 26,239 26,637 26,389 26,662 26,722 26,777 26,886 26,375 26,426 26,105                    25,929
+
+                      16 to 19 years                               2,513  2,605 2,466 2,635 2,555       ,605 2,594 2,610 2,608 2,484 2,432 2,549                            2,507
+                        16 and 17 years                              923    960    877    995    966     955   936    964    911    864    882    906                         878
+                        18 and 19 years                            1,592  1,635 1,592 1,645 1,611       ,643 1,649 1,685 1,679 1,596 U526 1,653                             1,638
+                      20 to 24 years                               3,748  3,690 3,670 3,647 3,586       ,543 3,507 3,538 3,468 3,391 3,346 3,345                            3,362
+                      25 years and over                           20,660 20,412 20,123 20,344 20,240 20,526 20,632 20,627 20,827 20,508 20,671 20,207                      20,054
+                         25 to 54 years                           15,887 15,638 15,642 15,737 15,746 15,919 15,966 16,022 16,068 15,833 15,817 15,537                      15,475
+                        55 years and over                          4,703 4,75    4,506 4,643 4,554 4,673 4,710 4,638 4,739 4,591 4,669 4,656                                4,528
+
+
+
+
+                                                      A-33: Employed persons by major occupation group, seasonally adjusted
+
+
+                                                                                               (In thousands)
+
+                                                                                              1967                                                     1966
+
+                                    Occupation group
+                                                                   July      June    May      Apr.              Feb.            Dec.            Oct.      Sept.    Aug.    July
+
+
+
+                    White-collar workers                           34, 345 34 ,338   33,818 33,678 33,452 33,615 33,534 33,708 33,961 33,583 33,487 33,529 33,290
+                     Professional and technical                     9,993 9,992       9,649 9,717 9,691 9,825 9,649 9,703 9,573 9,521 9,445 9,466 9,456
+                     Managers, officials, and proprietor!           7,579 7,662       7,416 7,297 7,226 7,225 7,117 7,269 7,568 7,444 7,552 7,573 7,517
+                     Clerical workers                              12, 23812,260     12,290 12,163 11,995 12,093 12,197 12,273 12,338 12,048 11,938 12,014 11,816
+                     Sales workers                                  4,535 4,424       4,463 4,501 4,540 4,472 4,571 4,463 4,482 4,570 4,552 4,476 4,501
+                    Blue-collar workers                            27, 445 27,375 26,959 26,971 27,230 27,546 27,377 27,204 26,827 26,710 26,851 27,017 27,025
+                      Craftsmen and foremen                         9,766 9,736    9,796 9,863 10,032 10,044 10,010 9,799 9,683 9,609 9,637 9,710 9,610
+                      Operatives                                   14, 024 13,997 13,688 13,607 13,776 13,959 13,874 13,911 13,777 13,724 13,680 13,732 13,813
+                      Nonfarm laborers                              3,655 3,642 3,475 3,501 3,422 3,543 3,493 3,494 3,367 3,377 3,534 3,575 3,602
+                    Service workers                                 9,270 9,240      9,093    9,419    9,408    9,534   9,387   9,456   9,475   9,396     9,274   9,129    9,163
+                    Farmers and farm laborers           ,           3,550 3,427      3,382    3,568    3,606    3,589   3,754   3,663   3,622   3,483     3,578   3,633    3,566
+
+
+
+
+Digitized for FRASER
+http://fraser.stlouisfed.org/
+Federal Reserve Bank of St. Louis

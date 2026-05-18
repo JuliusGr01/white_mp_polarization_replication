@@ -1,0 +1,8 @@
+Issue month: 1981-08
+Reference month: 1981-07
+Status: failed
+Source: https://fraser.stlouisfed.org/files/docs/publications/employment/1980s/empl_081981.pdf
+PDF: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_pdfs\empl_081981.pdf
+Text: C:\Users\wmf098\Desktop\white_mp_polarization_replication\white_mp_polarization_replication\data\ee_text\empl_081981.txt
+Warnings: low occupation-label hit count (0); the PDF may need OCR (--ocr-fallback with Tesseract installed)
+Error: no occupation table candidate found
