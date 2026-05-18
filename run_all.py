@@ -2,10 +2,9 @@
 Run local projections for White (2022).
 
 Steps:
-  1) Build the routine/nonroutine employment panel from the BLS broad-occupation
-     series in `data/bls_occ_employed_monthly.csv`. These public BLS series start
-     in 1983, so this is a best-effort public-data approximation to White's
-     1969-2008 occupational sample.
+  1) Build the routine/nonroutine employment panel from the user's
+     Employment and Earnings Excel-derived CPS data for 1969-1982 and the BLS
+     broad-occupation series from 1983 onward.
   2) Romer–Romer shocks: place `data/RR_MPshocks_Updated(GBforecasts).csv`
      from Yuriy Gorodnichenko's Berkeley page. The loader uses MTGDATE and
      the final CSV column, sums shocks by month, and fills no-meeting months
@@ -29,7 +28,12 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from build_employment_panel import BLS_OCC_SOURCE, build_employment_panel
+from build_employment_panel import (
+    BLS_OCC_SOURCE,
+    EE_1969_1982_PANEL,
+    EXTENDED_EMPLOYMENT_PANEL,
+    build_extended_employment_panel,
+)
 from config import DATA_DIR, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
 from fetch_rr_shock import load_rr_shock_monthly
 from local_projections import estimate_irf_linear, estimate_irf_quad, estimate_irf_sign_both, fev_share_linear
@@ -37,15 +41,16 @@ from plotting import plot_figure3, plot_irf
 
 
 def merge_monthly_panel() -> pd.DataFrame:
-    emp_path = DATA_DIR / "employment_monthly.csv"
-    if BLS_OCC_SOURCE.exists():
-        emp = build_employment_panel(BLS_OCC_SOURCE)
-    elif emp_path.exists():
-        emp = pd.read_csv(emp_path, parse_dates=["date"])
+    if EE_1969_1982_PANEL.exists() and BLS_OCC_SOURCE.exists():
+        emp = build_extended_employment_panel(EE_1969_1982_PANEL, BLS_OCC_SOURCE)
+        emp.to_csv(EXTENDED_EMPLOYMENT_PANEL, index=False)
+    elif EXTENDED_EMPLOYMENT_PANEL.exists():
+        emp = pd.read_csv(EXTENDED_EMPLOYMENT_PANEL, parse_dates=["date"])
     else:
         raise FileNotFoundError(
-            f"Missing {BLS_OCC_SOURCE} and {emp_path}. Provide the BLS broad-occupation "
-            "monthly file or a prebuilt employment_monthly.csv."
+            f"Missing {EE_1969_1982_PANEL} and/or {BLS_OCC_SOURCE}. Provide the Excel-derived "
+            f"1969-1982 panel and BLS broad-occupation monthly file, or a prebuilt "
+            f"{EXTENDED_EMPLOYMENT_PANEL}."
         )
     shock = load_rr_shock_monthly().rename(columns={"shock": "eps"})
     shock["date"] = pd.to_datetime(shock["date"])

@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 
-START_DATE = "1983-01-01"
+START_DATE = "1969-01-01"
 END_DATE = "2020-12-31"
 SHOCK_END_DATE = "2008-12-31"
 

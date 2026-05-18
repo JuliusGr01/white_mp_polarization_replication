@@ -11,11 +11,11 @@ the .xlsx file directly with the standard-library zip/xml modules, then uses
 pandas for the small amount of tabular work.
 
 Outputs:
-  data/data_processed/cps_ee_1969_1982_leaf_alm_long.csv
-  data/data_processed/cps_ee_1969_1982_alm_panel.csv
-  data/data_processed/cps_ee_1969_1982_employment_monthly.csv
-  data/data_processed/cps_ee_1969_1982_alm_crosswalk.csv
-  data/data_processed/cps_ee_1969_1982_audit.csv
+  data/cps_ee_1969_1982_leaf_alm_long.csv
+  data/cps_ee_1969_1982_alm_panel.csv
+  data/cps_ee_1969_1982_employment_monthly.csv
+  data/cps_ee_1969_1982_alm_crosswalk.csv
+  data/cps_ee_1969_1982_audit.csv
 """
 
 from __future__ import annotations
@@ -32,9 +32,10 @@ from pathlib import Path
 import pandas as pd
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_INPUT = PROJECT_ROOT / "data" / "data_raw" / "1969_1982_CPS.xlsx"
-DEFAULT_OUT_DIR = PROJECT_ROOT / "data" / "data_processed"
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_INPUT = PROJECT_ROOT / "data" / "1969_1982_CPS.xlsx"
+LEGACY_INPUT = PROJECT_ROOT / "data" / "data_raw" / "1969_1982_CPS.xlsx"
+DEFAULT_OUT_DIR = PROJECT_ROOT / "data"
 
 LONG_OUT = "cps_ee_1969_1982_leaf_alm_long.csv"
 PANEL_OUT = "cps_ee_1969_1982_alm_panel.csv"
@@ -541,9 +542,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def resolve_input_path(path: Path) -> Path:
+    if path.exists():
+        return path
+    if path == DEFAULT_INPUT and LEGACY_INPUT.exists():
+        return LEGACY_INPUT
+    return path
+
+
 def main() -> None:
     args = build_arg_parser().parse_args()
-    raw = read_xlsx_first_sheet(args.input)
+    raw = read_xlsx_first_sheet(resolve_input_path(args.input))
     cleaned = clean_input(raw)
     write_outputs(cleaned, args.out_dir)
 

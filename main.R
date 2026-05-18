@@ -13,8 +13,13 @@
 
 # 0. Set-up ---------------------------------------------------------------
 
-# when working on server:
-setwd("C:/Users/wmf098/Sciebo/PhD/Masterarbeit/MP_LaborPol")
+# Work from the replication repository root. When run via `Rscript main.R`,
+# normalize to the folder containing this file; otherwise keep the current
+# interactive working directory.
+args_file <- tryCatch(normalizePath(sys.frames()[[1]]$ofile), error = function(e) NA_character_)
+if (!is.na(args_file)) {
+  setwd(dirname(args_file))
+}
 
 # packages used/needed
 # Merge this to all cps_parquet files
@@ -88,11 +93,15 @@ invisible(lapply(libs, function(pkg) {
 }))
 
 # Output path for Figures
-fig_dir <- "C:/Users/wmf098/Sciebo/PhD/Masterarbeit/MP_LaborPol/figures"
-tab_dir <- "C:/Users/wmf098/Sciebo/PhD/Masterarbeit/MP_LaborPol/tables"
+fig_dir <- file.path("output", "figures")
+tab_dir <- file.path("output", "tables")
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(tab_dir, recursive = TRUE, showWarnings = FALSE)
 
 # importing function-skript
-source("code/functions.R")
+if (file.exists("functions.R")) {
+  source("functions.R")
+}
 
 # White baseline sample ---------------------------------------------------
 
@@ -104,7 +113,7 @@ use_white_1969_sample <- Sys.getenv("MP_LABORPOL_USE_WHITE_1969", "1") != "0"
 options(mp_laborpol.use_white_1969 = use_white_1969_sample)
 
 if (use_white_1969_sample) {
-  source("code/build_white_1969_panel.R")
+  source("build_white_1969_panel.R")
   cache_file <- white_scaled_cache_file
 }
 

@@ -11,7 +11,7 @@ white_sample_start <- as.Date(Sys.getenv("MP_LABORPOL_SAMPLE_START", "1969-01-01
 white_sample_end_env <- Sys.getenv("MP_LABORPOL_SAMPLE_END", unset = NA_character_)
 
 white_pre1983_csv <- file.path(
-  "data", "data_processed", "cps_ee_1969_1982_alm_panel.csv"
+  "data", "cps_ee_1969_1982_alm_panel.csv"
 )
 white_post1982_cache <- Sys.getenv(
   "MP_LABORPOL_POST1982_CACHE",
@@ -25,7 +25,7 @@ read_white_pre1983_panel <- function(path = white_pre1983_csv) {
   if (!file.exists(path)) {
     stop(
       "Missing 1969-1982 Employment and Earnings panel: ", path,
-      "\nRun `python code/build_cps_ee_1969_1982_panel.py` first."
+      "\nRun `python build_cps_ee_1969_1982_panel.py` first."
     )
   }
 
