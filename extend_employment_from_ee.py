@@ -37,6 +37,9 @@ import subprocess
 import sys
 import tempfile
 import time
+import pytesseract
+from PIL import Image
+
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
