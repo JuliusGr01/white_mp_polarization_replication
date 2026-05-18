@@ -1,4 +1,4 @@
-"""Build the monthly routine/nonroutine employment panel from BLS broad occupations.
+"""Build the monthly routine/nonroutine employment panel.
 
 White (2022) follows the Autor-Levy-Murnane task grouping. With the public BLS
 1983+ broad occupation series available in this repo, the closest consistent split is:

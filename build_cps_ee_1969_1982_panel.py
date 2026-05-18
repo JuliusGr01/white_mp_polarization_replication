@@ -134,9 +134,9 @@ def build_schema() -> dict[tuple[str, int], SchemaRow]:
     add(p1, [39], "Service workers, except private household", True, "Manual", "nonroutine_manual_food")
     add(p1, [40], "Service workers, except private household", True, "Manual", "nonroutine_manual_other_service")
     add(p1, [41], "Total", False, None, None, "farm parent row")
-    add(p1, [42], "Farm workers", True, "Routine", "routine_manual_farmers")
+    add(p1, [42], "Farm workers", True, None, "excluded_farmers", "farm occupation; outside ALM routine/nonroutine groups")
     add(p1, [43], "Farm workers", False, None, None, "farm labor parent row")
-    add(p1, [44, 45], "Farm laborers and foremen", True, "Routine", "routine_manual_farm_labor")
+    add(p1, [44, 45], "Farm laborers and foremen", True, None, "excluded_farm_labor", "farm occupation; outside ALM routine/nonroutine groups")
 
     p2 = P2
     add(p2, [1], None, False, None, None, "published total; parent row")
@@ -165,9 +165,9 @@ def build_schema() -> dict[tuple[str, int], SchemaRow]:
     add(p2, [40], "Service workers, except private household", True, "Manual", "nonroutine_manual_protective")
     add(p2, [41], "Service workers, except private household", True, "Manual", "nonroutine_manual_other_service")
     add(p2, [42], "Total", False, None, None, "farm parent row")
-    add(p2, [43], "Farm workers", True, "Routine", "routine_manual_farmers")
+    add(p2, [43], "Farm workers", True, None, "excluded_farmers", "farm occupation; outside ALM routine/nonroutine groups")
     add(p2, [44], "Farm workers", False, None, None, "farm labor parent row")
-    add(p2, [45, 46], "Farm laborers and foremen", True, "Routine", "routine_manual_farm_labor")
+    add(p2, [45, 46], "Farm laborers and foremen", True, None, "excluded_farm_labor", "farm occupation; outside ALM routine/nonroutine groups")
 
     p3 = P3
     add(p3, [1], None, False, None, None, "published total; parent row")
@@ -196,9 +196,9 @@ def build_schema() -> dict[tuple[str, int], SchemaRow]:
     add(p3, [40], "Service workers, except private household", True, "Manual", "nonroutine_manual_protective")
     add(p3, [41], "Service workers, except private household", True, "Manual", "nonroutine_manual_other_service")
     add(p3, [42], "Total", False, None, None, "farm parent row")
-    add(p3, [43], "Farm workers", True, "Routine", "routine_manual_farmers")
+    add(p3, [43], "Farm workers", True, None, "excluded_farmers", "farm occupation; outside ALM routine/nonroutine groups")
     add(p3, [44], "Farm workers", False, None, None, "farm labor parent row")
-    add(p3, [45, 46], "Farm laborers and supervisors", True, "Routine", "routine_manual_farm_labor")
+    add(p3, [45, 46], "Farm laborers and supervisors", True, None, "excluded_farm_labor", "farm occupation; outside ALM routine/nonroutine groups")
 
     out = {(row.period, row.occ_pos): row for row in rows}
     if len(out) != len(rows):

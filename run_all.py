@@ -11,7 +11,7 @@ Steps:
      with zero.
   3) python run_all.py
 
-Outputs IRF plots and FEV table under `output/`.
+Outputs Figures 1-3 recreations, IRF plots, and the FEV table under `output/`.
 """
 
 from __future__ import annotations
@@ -34,10 +34,12 @@ from build_employment_panel import (
     EXTENDED_EMPLOYMENT_PANEL,
     build_extended_employment_panel,
 )
-from config import DATA_DIR, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
+from config import DATA_DIR, END_DATE, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, START_DATE
 from fetch_rr_shock import load_rr_shock_monthly
 from local_projections import estimate_irf_linear, estimate_irf_quad, estimate_irf_sign_both, fev_share_linear
+from plot_figures_1_2 import main as plot_figures_1_2
 from plotting import plot_figure3, plot_irf
+from seasonal_adjust import add_employment_sa_columns
 
 
 def merge_monthly_panel() -> pd.DataFrame:
@@ -54,9 +56,10 @@ def merge_monthly_panel() -> pd.DataFrame:
         )
     shock = load_rr_shock_monthly().rename(columns={"shock": "eps"})
     shock["date"] = pd.to_datetime(shock["date"])
-    m = emp.merge(shock, on="date", how="inner").sort_values("date")
-    # Employment may extend past 2020; updated Romer–Romer shocks stop in 2008 (paper baseline).
-    m = m[(m["date"] >= pd.Timestamp(START_DATE)) & (m["date"] <= pd.Timestamp(SHOCK_END_DATE))]
+    m = emp.merge(shock, on="date", how="left").sort_values("date")
+    # Keep post-2008 employment so y_{t+h} is available for late-shock observations.
+    # Rows with missing current/lagged shocks drop inside each local projection.
+    m = m[(m["date"] >= pd.Timestamp(START_DATE)) & (m["date"] <= pd.Timestamp(END_DATE))]
     return m.reset_index(drop=True)
 
 
@@ -102,6 +105,12 @@ def _run(args: argparse.Namespace) -> None:
         panel = synthetic_panel()
     else:
         panel = merge_monthly_panel()
+        panel = add_employment_sa_columns(panel)
+        panel["log_total"] = panel["log_total_sa"]
+        panel["log_routine"] = panel["log_routine_sa"]
+        panel["log_nonroutine"] = panel["log_nonroutine_sa"]
+        panel["routine_share"] = panel["routine_share_sa"]
+        plot_figures_1_2()
 
     horizons = range(1, H_MAX + 1)
 
