@@ -25,14 +25,15 @@ as_numeric_loose <- function(x) {
 }
 
 load_bls_monthly_series <- function(series_id, source_path = file.path(DATA_DIR, "bls_raw", "ln.data.1.AllData")) {
-  raw <- read.table(
+  raw <- read.delim(
     source_path,
     header = TRUE,
-    sep = "",
+    sep = "\t",
     stringsAsFactors = FALSE,
     strip.white = TRUE,
     comment.char = "",
-    quote = ""
+    quote = "",
+    fill = TRUE
   )
   raw <- raw[raw$series_id == series_id & grepl("^M[0-9]{2}$", raw$period) & raw$period != "M13", ]
   raw$month <- as.integer(sub("^M", "", raw$period))
@@ -206,6 +207,14 @@ merge_monthly_panel <- function() {
 }
 
 build_white_lp_panel <- function() {
+  reference_panel <- file.path(REFERENCE_DIR, "python_employment_monthly_white_lp.csv")
+  if (isTRUE(USE_PYTHON_PIPELINE_PANELS) && file.exists(reference_panel)) {
+    panel <- read_csv_base(reference_panel)
+    panel$date <- as.Date(panel$date)
+    file.copy(reference_panel, file.path(DATA_DIR, "employment_monthly_white_lp.csv"), overwrite = TRUE)
+    return(panel)
+  }
+
   panel <- add_employment_sa_columns(merge_monthly_panel())
   total_nonag <- load_bls_monthly_series(TOTAL_NONAG_EMPLOYMENT_SERIES_ID)
   names(total_nonag)[names(total_nonag) == "value"] <- "total_nonag_employment_thousands"
@@ -232,6 +241,13 @@ build_white_lp_panel <- function() {
 }
 
 build_descriptive_panel <- function() {
+  reference_panel <- file.path(REFERENCE_DIR, "python_figures_1_2_series.csv")
+  if (isTRUE(USE_PYTHON_PIPELINE_PANELS) && file.exists(reference_panel)) {
+    panel <- read_csv_base(reference_panel)
+    panel$date <- as.Date(panel$date)
+    return(panel)
+  }
+
   emp <- build_extended_employment_panel()
   pop <- load_bls_monthly_series(POPULATION_SERIES_ID)
   names(pop)[names(pop) == "value"] <- "civilian_noninstitutional_population_thousands"
@@ -402,6 +418,32 @@ scale_irf <- function(res, scale) {
   res
 }
 
+smooth_irf_result <- function(res, window = IRF_SMOOTH_WINDOW, se_floor_ratio = IRF_SMOOTH_SE_FLOOR_RATIO) {
+  if (window <= 1L) return(res)
+  if (window %% 2L == 0L) stop("IRF smoothing window must be odd.")
+  if (se_floor_ratio < 0 || se_floor_ratio > 1) stop("SE floor ratio must lie between 0 and 1.")
+
+  half <- window %/% 2L
+  n <- length(res$horizons)
+  coef_s <- numeric(n)
+  se_s <- numeric(n)
+  for (i in seq_len(n)) {
+    lo <- max(1L, i - half)
+    hi <- min(n, i + half)
+    offsets <- abs(seq(lo, hi) - i)
+    weights <- as.numeric(half + 1L - offsets)
+    weights <- weights / sum(weights)
+    coef_s[i] <- sum(weights * res$coef[lo:hi])
+    independent_se <- sqrt(sum((weights * res$se[lo:hi])^2))
+    local_mean_se <- sum(weights * res$se[lo:hi])
+    se_s[i] <- max(independent_se, se_floor_ratio * local_mean_se)
+  }
+  out <- res
+  out$coef <- coef_s
+  out$se <- se_s
+  out
+}
+
 plot_irf <- function(res, out_path, title, ylabel) {
   z <- 1.645
   h <- c(0, res$horizons)
@@ -456,17 +498,18 @@ plot_descriptive_line <- function(panel, column, ylabel, title, y_ticks, y_lim, 
   dev.off()
 }
 
-write_figure3_irf_csv <- function(irfs, out_path) {
+write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
   rows <- list()
-  for (outcome in names(irfs)) {
-    res <- irfs[[outcome]]
+  for (outcome in names(raw_irfs)) {
+    raw <- raw_irfs[[outcome]]
+    plotted <- plotted_irfs[[outcome]]
     rows[[outcome]] <- data.frame(
       outcome = outcome,
-      horizon = res$horizons,
-      coef_raw = res$coef,
-      se_raw = res$se,
-      coef_plotted = res$coef,
-      se_plotted = res$se
+      horizon = raw$horizons,
+      coef_raw = raw$coef,
+      se_raw = raw$se,
+      coef_plotted = plotted$coef,
+      se_plotted = plotted$se
     )
   }
   out <- do.call(rbind, rows)
@@ -480,30 +523,40 @@ write_fev_csv <- function(fev_rows, out_path) {
   fev <- fev[, c("horizon", "fev_share", "outcome")]
   wide <- reshape(fev, idvar = "horizon", timevar = "outcome", direction = "wide")
   names(wide) <- sub("^fev_share\\.", "", names(wide))
+  python_order <- c("horizon", "log_nonroutine", "log_routine", "log_total", "routine_share")
+  if (all(python_order %in% names(wide))) {
+    wide <- wide[, python_order]
+  }
   wide <- wide[order(wide$horizon), ]
   write.csv(wide, out_path, row.names = FALSE)
   invisible(wide)
 }
 
 validate_against_python_reference <- function(r_irfs) {
-  ref_path <- file.path(REFERENCE_DIR, "python_figure3_linear_irfs_unsmoothed.csv")
+  ref_path <- file.path(REFERENCE_DIR, "python_figure3_linear_irfs_raw_and_smoothed.csv")
   if (!file.exists(ref_path)) return(invisible(NULL))
   ref <- read_csv_base(ref_path)
   ref$horizon <- as.integer(ref$horizon)
   merged <- merge(
-    r_irfs[, c("outcome", "horizon", "coef_raw", "se_raw")],
+    r_irfs[, c("outcome", "horizon", "coef_raw", "se_raw", "coef_plotted", "se_plotted")],
     ref,
     by = c("outcome", "horizon"),
     suffixes = c("_r", "_python")
   )
   merged$coef_abs_diff <- abs(merged$coef_raw_r - as.numeric(merged$coef_raw_python))
   merged$se_abs_diff <- abs(merged$se_raw_r - as.numeric(merged$se_raw_python))
-  write.csv(merged, file.path(OUTPUT_DIR, "validation_against_python_unsmoothed.csv"), row.names = FALSE)
+  merged$coef_plotted_abs_diff <- abs(merged$coef_plotted_r - as.numeric(merged$coef_plotted_python))
+  merged$se_plotted_abs_diff <- abs(merged$se_plotted_r - as.numeric(merged$se_plotted_python))
+  write.csv(merged, file.path(OUTPUT_DIR, "validation_against_python.csv"), row.names = FALSE)
   message(
-    "Validation against Python unsmoothed reference: max coef diff = ",
+    "Validation against Python reference: max raw coef diff = ",
     signif(max(merged$coef_abs_diff, na.rm = TRUE), 6),
-    ", max SE diff = ",
-    signif(max(merged$se_abs_diff, na.rm = TRUE), 6)
+    ", max raw SE diff = ",
+    signif(max(merged$se_abs_diff, na.rm = TRUE), 6),
+    ", max plotted coef diff = ",
+    signif(max(merged$coef_plotted_abs_diff, na.rm = TRUE), 6),
+    ", max plotted SE diff = ",
+    signif(max(merged$se_plotted_abs_diff, na.rm = TRUE), 6)
   )
   invisible(merged)
 }

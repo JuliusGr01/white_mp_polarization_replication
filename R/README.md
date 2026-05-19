@@ -1,7 +1,9 @@
 # R Replication of the White-Style Pipeline
 
-This folder is a self-contained R port of the current Python pipeline, focused
-on the **unsmoothed** Figure 3 results.
+This folder is a self-contained R port of the current Python pipeline. It uses
+the materialized Python panels copied into `reference/` as canonical inputs so
+the R estimates match the Python replication exactly up to floating-point
+precision.
 
 Run from this directory:
 
@@ -19,44 +21,45 @@ The script uses only base R, `stats`, and base graphics.
 
 ## What It Does
 
-1. Rebuilds the 1969+ routine/nonroutine employment panel from:
+1. Uses the Python materialized Figure 1/2 and LP panels from `reference/` by
+   default. This avoids algorithmic drift between statsmodels STL and base R
+   STL and is what makes the R and Python results numerically identical.
+2. The raw input files are also copied under `data/`, so the R code can rebuild
+   the panels if `USE_PYTHON_PIPELINE_PANELS <- FALSE` in `config.R`:
    - `data/cps_ee_1969_1982_employment_monthly.csv`
    - `data/bls_occ_employed_monthly.csv`
-2. Applies multiplicative STL seasonal adjustment to the occupation series.
 3. Loads the Romer-Romer meeting-level shocks from
    `data/RR_MPshocks_Updated(GBforecasts).csv`, sums them to monthly shocks,
    and fills no-meeting months with zero.
-4. Applies the seasonally adjusted routine share to BLS aggregate
-   nonagricultural wage-and-salary employment, matching the Python pipeline.
-5. Runs unsmoothed Jorda local projections with:
+4. Runs Jorda local projections with:
    - 48 monthly horizons
    - 12 lags of monthly outcome changes
    - 12 lags of monetary shocks
    - Newey-West HAC standard errors with 12 lags
-6. Writes Figures 1-3, all individual IRF plots, FEV shares, the rebuilt LP
-   panel, and a Python-reference validation file.
+5. Applies the same Figure 3 display smoother as the Python pipeline and also
+   writes unsmoothed diagnostic outputs.
+6. Writes Figures 1-3, all individual IRF plots, FEV shares, the LP panel, and
+   a Python-reference validation file.
 
 ## Important Difference From the Latest Python Plot
 
-The latest Python `output/figure3_linear_occupations.png` includes a display
-smoother. This R port intentionally reproduces the **unsmoothed** raw local
-projection results:
+The current Python `output/figure3_linear_occupations.png` includes a display
+smoother. The R port writes both the smoothed Python-style output and the raw
+unsmoothed diagnostic output:
 
+- `output/figure3_linear_occupations.png`
+- `output/figure3_linear_irfs.csv`
 - `output/figure3_linear_occupations_unsmoothed.png`
 - `output/figure3_linear_irfs_unsmoothed.csv`
 
-For convenience, `output/figure3_linear_occupations.png` and
-`output/figure3_linear_irfs.csv` are also written, but they are the same
-unsmoothed R results.
-
 ## Reference Files
 
-The `reference/` folder contains copied Python outputs from the previous step,
-including `python_figure3_linear_irfs_unsmoothed.csv`. The R pipeline compares
-its unsmoothed IRFs against that reference and writes:
+The `reference/` folder contains copied Python outputs from the previous step.
+The R pipeline compares its raw and plotted Figure 3 IRFs against that reference
+and writes:
 
 ```text
-output/validation_against_python_unsmoothed.csv
+output/validation_against_python.csv
 ```
 
 No original Python input files were removed; they were copied here so this R

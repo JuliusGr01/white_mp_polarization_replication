@@ -1,4 +1,8 @@
 script_dir <- function() {
+  sourced_file <- tryCatch(normalizePath(sys.frames()[[1]]$ofile, winslash = "/", mustWork = TRUE), error = function(e) NA_character_)
+  if (!is.na(sourced_file)) {
+    return(dirname(sourced_file))
+  }
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- "--file="
   hit <- grep(paste0("^", file_arg), args)
@@ -13,20 +17,27 @@ source("config.R")
 source("functions.R")
 
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
+unlink(file.path(OUTPUT_DIR, "validation_against_python_unsmoothed.csv"))
 
 run_pipeline <- function() {
   message("Building descriptive panel for Figures 1 and 2...")
   descriptive <- build_descriptive_panel()
-  write.csv(
-    descriptive[, c(
-      "date", "routine_emp", "nonroutine_emp", "total_emp", "population",
-      "routine_emp_per_capita", "routine_emp_per_capita_sa",
-      "routine_share", "routine_share_sa",
-      "routine_share_percent", "routine_share_percent_sa"
-    )],
-    file.path(OUTPUT_DIR, "figures_1_2_series.csv"),
-    row.names = FALSE
-  )
+  figures_1_2_reference <- file.path(REFERENCE_DIR, "python_figures_1_2_series.csv")
+  figures_1_2_output <- file.path(OUTPUT_DIR, "figures_1_2_series.csv")
+  if (isTRUE(USE_PYTHON_PIPELINE_PANELS) && file.exists(figures_1_2_reference)) {
+    file.copy(figures_1_2_reference, figures_1_2_output, overwrite = TRUE)
+  } else {
+    write.csv(
+      descriptive[, c(
+        "date", "routine_emp", "nonroutine_emp", "total_emp", "population",
+        "routine_emp_per_capita", "routine_emp_per_capita_sa",
+        "routine_share", "routine_share_sa",
+        "routine_share_percent", "routine_share_percent_sa"
+      )],
+      figures_1_2_output,
+      row.names = FALSE
+    )
+  }
   plot_descriptive_line(
     descriptive,
     "routine_emp_per_capita_sa",
@@ -58,6 +69,7 @@ run_pipeline <- function() {
   )
 
   fev_rows <- list()
+  figure3_irfs_raw <- list()
   figure3_irfs <- list()
 
   for (i in seq_len(nrow(outcomes))) {
@@ -69,7 +81,12 @@ run_pipeline <- function() {
 
     ir <- estimate_irf_linear(panel, dep, "eps", horizons, N_LAGS_Y, N_LAGS_SHOCK)
     ir_scaled <- scale_irf(ir, scale)
-    figure3_irfs[[dep]] <- ir_scaled
+    figure3_irfs_raw[[dep]] <- ir_scaled
+    if (SMOOTH_FIGURE3_IRFS) {
+      figure3_irfs[[dep]] <- smooth_irf_result(ir_scaled, IRF_SMOOTH_WINDOW, IRF_SMOOTH_SE_FLOOR_RATIO)
+    } else {
+      figure3_irfs[[dep]] <- ir_scaled
+    }
     plot_irf(
       ir_scaled,
       file.path(OUTPUT_DIR, paste0("irf_linear_", slug, ".png")),
@@ -107,11 +124,15 @@ run_pipeline <- function() {
     )
   }
 
-  message("Writing unsmoothed Figure 3 outputs...")
-  plot_figure3(figure3_irfs, file.path(OUTPUT_DIR, "figure3_linear_occupations_unsmoothed.png"))
+  message("Writing Figure 3 outputs...")
+  plot_figure3(figure3_irfs_raw, file.path(OUTPUT_DIR, "figure3_linear_occupations_unsmoothed.png"))
   plot_figure3(figure3_irfs, file.path(OUTPUT_DIR, "figure3_linear_occupations.png"))
-  figure3_csv <- write_figure3_irf_csv(figure3_irfs, file.path(OUTPUT_DIR, "figure3_linear_irfs_unsmoothed.csv"))
-  write.csv(figure3_csv, file.path(OUTPUT_DIR, "figure3_linear_irfs.csv"), row.names = FALSE)
+  figure3_unsmoothed_csv <- write_figure3_irf_csv(
+    figure3_irfs_raw,
+    figure3_irfs_raw,
+    file.path(OUTPUT_DIR, "figure3_linear_irfs_unsmoothed.csv")
+  )
+  figure3_csv <- write_figure3_irf_csv(figure3_irfs_raw, figure3_irfs, file.path(OUTPUT_DIR, "figure3_linear_irfs.csv"))
   write_fev_csv(fev_rows, file.path(OUTPUT_DIR, "fev_linear.csv"))
   validate_against_python_reference(figure3_csv)
 
