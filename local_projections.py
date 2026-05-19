@@ -3,7 +3,8 @@ Jordà (2005) local projections for White (2022) Equations (2)–(4).
 
 Equation (2) linear:
     y_{t+h} - y_t = β'_h x_t + γ_h ε_t + u_{t,h}
-with x_t = (1, t, y_{t-1},...,y_{t-12}, ε_{t-1},...,ε_{t-12}).
+with x_t using one year of lagged monthly changes in y and one year of
+lagged shocks. This matches the Figure 3 replication settings in config.py.
 
 Equation (3) sign-split:
     y_{t+h} - y_t = β'_h x_t + γ^+_h ε^+_t + γ^-_h ε^-_t + u_{t,h}
@@ -24,7 +25,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.regression.linear_model import OLS
 
-from config import NW_LAGS
+from config import LP_INCLUDE_TIME_TREND, LP_Y_LAG_TRANSFORM, NW_LAGS
 
 Spec = Literal["linear", "sign", "quad"]
 
@@ -51,11 +52,23 @@ def build_design(
     shock: str,
     n_lag_y: int,
     n_lag_eps: int,
+    y_lag_transform: str | None = None,
+    include_time_trend: bool | None = None,
 ) -> pd.DataFrame:
+    y_lag_transform = LP_Y_LAG_TRANSFORM if y_lag_transform is None else y_lag_transform
+    include_time_trend = LP_INCLUDE_TIME_TREND if include_time_trend is None else include_time_trend
+
     out = df.copy()
     out["const"] = 1.0
-    out["time_trend"] = np.arange(len(out), dtype=float)
-    out = pd.concat([out, _lag_matrix(out[dep_level], n_lag_y, "y")], axis=1)
+    if include_time_trend:
+        out["time_trend"] = np.arange(len(out), dtype=float)
+    if y_lag_transform == "level":
+        y_lag_source = out[dep_level]
+    elif y_lag_transform == "diff":
+        y_lag_source = out[dep_level].diff()
+    else:
+        raise ValueError(f"Unsupported y_lag_transform: {y_lag_transform!r}")
+    out = pd.concat([out, _lag_matrix(y_lag_source, n_lag_y, "y")], axis=1)
     out = pd.concat([out, _lag_matrix(out[shock], n_lag_eps, "eps")], axis=1)
     out["eps_plus"] = np.maximum(out[shock], 0.0)
     out["eps_minus"] = np.minimum(out[shock], 0.0)
@@ -63,8 +76,11 @@ def build_design(
     return out
 
 
-def _control_cols(n_lag_y: int, n_lag_eps: int) -> list[str]:
-    cols = ["const", "time_trend"]
+def _control_cols(n_lag_y: int, n_lag_eps: int, include_time_trend: bool | None = None) -> list[str]:
+    include_time_trend = LP_INCLUDE_TIME_TREND if include_time_trend is None else include_time_trend
+    cols = ["const"]
+    if include_time_trend:
+        cols.append("time_trend")
     cols += [f"y_L{i}" for i in range(1, n_lag_y + 1)]
     cols += [f"eps_L{i}" for i in range(1, n_lag_eps + 1)]
     return cols
@@ -166,16 +182,16 @@ def fev_share_linear(
     """Share of FEV due to shocks: 1 - MSFE_full / MSFE_restricted (linear controls)."""
     rows: list[dict] = []
     base = build_design(df, dep_level, shock, n_lag_y, n_lag_eps)
-    Xy = [f"y_L{i}" for i in range(1, n_lag_y + 1)]
     Xeps = [shock] + [f"eps_L{i}" for i in range(1, n_lag_eps + 1)]
+    control_base = _control_cols(n_lag_y, 0)
 
     for h in horizons:
         lhs = base[dep_level].shift(-h) - base[dep_level]
-        reg_full = pd.concat([lhs.rename("lhs"), base[["const", "time_trend"] + Xy + Xeps]], axis=1).dropna()
-        Xf = reg_full[["const", "time_trend"] + Xy + Xeps]
+        reg_full = pd.concat([lhs.rename("lhs"), base[control_base + Xeps]], axis=1).dropna()
+        Xf = reg_full[control_base + Xeps]
         res_f = OLS(reg_full["lhs"], Xf).fit()
-        reg_res = pd.concat([lhs.rename("lhs"), base[["const", "time_trend"] + Xy]], axis=1).dropna()
-        Xr = reg_res[["const", "time_trend"] + Xy]
+        reg_res = pd.concat([lhs.rename("lhs"), base[control_base]], axis=1).dropna()
+        Xr = reg_res[control_base]
         res_r = OLS(reg_res["lhs"], Xr).fit()
         mse_f = float(np.mean(res_f.resid**2))
         mse_r = float(np.mean(res_r.resid**2))

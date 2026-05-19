@@ -4,7 +4,9 @@ Run local projections for White (2022).
 Steps:
   1) Build the routine/nonroutine employment panel from the user's
      Employment and Earnings Excel-derived CPS data for 1969-1982 and the BLS
-     broad-occupation series from 1983 onward.
+     broad-occupation series from 1983 onward. For the LPs, use the resulting
+     seasonally adjusted occupation shares to split BLS aggregate
+     nonagricultural wage-and-salary employment.
   2) Romer–Romer shocks: place `data/RR_MPshocks_Updated(GBforecasts).csv`
      from Yuriy Gorodnichenko's Berkeley page. The loader uses MTGDATE and
      the final CSV column, sums shocks by month, and fills no-meeting months
@@ -28,18 +30,22 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
+from bls_monthly import load_bls_monthly_series
 from build_employment_panel import (
     BLS_OCC_SOURCE,
     EE_1969_1982_PANEL,
     EXTENDED_EMPLOYMENT_PANEL,
     build_extended_employment_panel,
 )
-from config import DATA_DIR, END_DATE, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, START_DATE
+from config import DATA_DIR, END_DATE, H_MAX, N_LAGS_SHOCK, N_LAGS_Y, ROOT, SHOCK_END_DATE, START_DATE
 from fetch_rr_shock import load_rr_shock_monthly
 from local_projections import estimate_irf_linear, estimate_irf_quad, estimate_irf_sign_both, fev_share_linear
 from plot_figures_1_2 import main as plot_figures_1_2
 from plotting import plot_figure3, plot_irf
 from seasonal_adjust import add_employment_sa_columns
+
+TOTAL_NONAG_EMPLOYMENT_SERIES_ID = "LNS12032187"
+LP_EMPLOYMENT_PANEL = DATA_DIR / "employment_monthly_white_lp.csv"
 
 
 def merge_monthly_panel() -> pd.DataFrame:
@@ -61,6 +67,39 @@ def merge_monthly_panel() -> pd.DataFrame:
     # Rows with missing current/lagged shocks drop inside each local projection.
     m = m[(m["date"] >= pd.Timestamp(START_DATE)) & (m["date"] <= pd.Timestamp(END_DATE))]
     return m.reset_index(drop=True)
+
+
+def build_white_lp_panel() -> pd.DataFrame:
+    """Build White-style variables used in Figure 3 local projections.
+
+    The occupation data identify the routine/nonroutine shares. Following the
+    paper's Figure 3 wording, levels are those shares applied to seasonally
+    adjusted BLS employment for nonagricultural wage-and-salary workers.
+    """
+    panel = add_employment_sa_columns(merge_monthly_panel())
+    total_nonag = load_bls_monthly_series(TOTAL_NONAG_EMPLOYMENT_SERIES_ID).rename(
+        columns={"value": "total_nonag_employment_thousands"}
+    )
+    total_nonag["total_nonag_emp"] = total_nonag["total_nonag_employment_thousands"] * 1000.0
+
+    panel = panel.merge(total_nonag[["date", "total_nonag_emp"]], on="date", how="left")
+    if panel["total_nonag_emp"].isna().any():
+        missing = panel.loc[panel["total_nonag_emp"].isna(), "date"].dt.strftime("%Y-%m").head(12)
+        raise ValueError(f"Missing aggregate nonagricultural employment for: {', '.join(missing)}")
+
+    panel["routine_share"] = panel["routine_share_sa"]
+    panel["total_emp"] = panel["total_nonag_emp"]
+    panel["routine_emp"] = panel["routine_share"] * panel["total_emp"]
+    panel["nonroutine_emp"] = (1.0 - panel["routine_share"]) * panel["total_emp"]
+    panel["log_total"] = np.log(panel["total_emp"])
+    panel["log_routine"] = np.log(panel["routine_emp"])
+    panel["log_nonroutine"] = np.log(panel["nonroutine_emp"])
+
+    panel = panel[(panel["date"] >= pd.Timestamp(START_DATE)) & (panel["date"] <= pd.Timestamp(SHOCK_END_DATE))]
+    panel = panel.reset_index(drop=True)
+    LP_EMPLOYMENT_PANEL.parent.mkdir(parents=True, exist_ok=True)
+    panel.to_csv(LP_EMPLOYMENT_PANEL, index=False)
+    return panel
 
 
 def synthetic_panel(n: int = 400, seed: int = 0) -> pd.DataFrame:
@@ -104,12 +143,7 @@ def _run(args: argparse.Namespace) -> None:
     if args.synthetic:
         panel = synthetic_panel()
     else:
-        panel = merge_monthly_panel()
-        panel = add_employment_sa_columns(panel)
-        panel["log_total"] = panel["log_total_sa"]
-        panel["log_routine"] = panel["log_routine_sa"]
-        panel["log_nonroutine"] = panel["log_nonroutine_sa"]
-        panel["routine_share"] = panel["routine_share_sa"]
+        panel = build_white_lp_panel()
         plot_figures_1_2()
 
     horizons = range(1, H_MAX + 1)

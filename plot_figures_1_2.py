@@ -17,16 +17,16 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from bls_monthly import load_bls_monthly_series
 from build_employment_panel import (
     BLS_OCC_SOURCE,
     EE_1969_1982_PANEL,
     EXTENDED_EMPLOYMENT_PANEL,
     build_extended_employment_panel,
 )
-from config import DATA_DIR, END_DATE, ROOT, START_DATE
+from config import END_DATE, ROOT, START_DATE
 from seasonal_adjust import add_employment_sa_columns
 
-BLS_ALLDATA = DATA_DIR / "bls_raw" / "ln.data.1.AllData"
 POPULATION_SERIES_ID = "LNU00000000"  # Civilian noninstitutional population, thousands.
 RECESSIONS = [
     ("1969-12-01", "1970-11-01"),
@@ -38,19 +38,6 @@ RECESSIONS = [
     ("2007-12-01", "2009-06-01"),
     ("2020-02-01", "2020-04-01"),
 ]
-
-
-def load_bls_monthly_series(series_id: str, source_path: Path = BLS_ALLDATA) -> pd.DataFrame:
-    raw = pd.read_csv(source_path, sep=r"\s+", engine="python")
-    raw = raw[(raw["series_id"] == series_id) & raw["period"].str.match(r"M\d{2}")]
-    raw = raw[raw["period"] != "M13"].copy()
-    raw["month"] = raw["period"].str[1:].astype(int)
-    raw["date"] = pd.to_datetime(
-        {"year": raw["year"].astype(int), "month": raw["month"], "day": 1}
-    )
-    raw["value"] = pd.to_numeric(raw["value"], errors="coerce")
-    return raw[["date", "value"]].dropna().sort_values("date")
-
 
 def build_descriptive_panel() -> pd.DataFrame:
     if EE_1969_1982_PANEL.exists() and BLS_OCC_SOURCE.exists():
