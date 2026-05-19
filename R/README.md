@@ -2,7 +2,8 @@
 
 This folder is a self-contained R port of the current Python pipeline, written
 in the same script-driven style as the `final/` folder of the thesis project.
-`main.R` does setup and sourcing, `2_LP.R` contains the empirical workflow, and
+`main.R` does setup and sourcing, `1_Data.R` rebuilds the estimation panel from
+the raw Excel/BLS inputs, `2_LP.R` contains the empirical workflow, and
 `functions.R` only contains reusable helper functions.
 
 Run from this directory:
@@ -22,25 +23,33 @@ The scripts use only base R, `stats`, and base graphics.
 
 ## What It Does
 
-1. Uses the Python materialized Figure 1/2 and LP panels from `reference/` by
-   default. This avoids algorithmic drift between statsmodels STL and base R
-   STL and is what makes the R and Python results numerically identical.
-2. The raw input files are also copied under `data/` for inspection and future
+1. Rebuilds the 1969-1982 historical occupation panel from:
+   - `data/1969_1982_CPS.xlsx`
+   - `data/cps_ee_1969_1982_alm_crosswalk.csv`
+2. Builds the 1983+ broad occupation panel and aggregate employment from:
+   - `data/bls_raw/ln.data.1.AllData`
+3. The raw input files are also copied under `data/` for inspection and future
    extensions:
    - `data/cps_ee_1969_1982_employment_monthly.csv`
    - `data/bls_occ_employed_monthly.csv`
-3. Loads the Romer-Romer meeting-level shocks from
+4. Loads the Romer-Romer meeting-level shocks from
    `data/RR_MPshocks_Updated(GBforecasts).csv`, sums them to monthly shocks,
    and fills no-meeting months with zero.
-4. Runs Jorda local projections with:
+5. Runs Jorda local projections with:
    - 48 monthly horizons
    - 12 lags of monthly outcome changes
    - 12 lags of monetary shocks
    - Newey-West HAC standard errors with 12 lags
-5. Applies the same Figure 3 display smoother as the Python pipeline and also
+6. Applies the same Figure 3 display smoother as the Python pipeline and also
    writes unsmoothed diagnostic outputs.
-6. Writes Figures 1-3, all individual IRF plots, FEV shares, the LP panel, and
+7. Writes Figures 1-3, all individual IRF plots, FEV shares, the LP panel, and
    a Python-reference validation file.
+
+The data-build diagnostics are written to:
+
+```text
+output/data_build/
+```
 
 ## Important Difference From the Latest Python Plot
 

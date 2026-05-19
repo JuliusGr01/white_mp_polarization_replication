@@ -10,37 +10,80 @@
 
 # 0. Set-up ---------------------------------------------------------------
 
-get_script_dir <- function() {
-  sourced_file <- tryCatch(
-    normalizePath(sys.frames()[[1]]$ofile, winslash = "/", mustWork = TRUE),
-    error = function(e) NA_character_
-  )
-  if (!is.na(sourced_file)) return(dirname(sourced_file))
+setwd("C:/Users/wmf098/Desktop/white_mp_polarization_replication/white_mp_polarization_replication")
 
-  args <- commandArgs(trailingOnly = FALSE)
-  file_arg <- "--file="
-  hit <- grep(paste0("^", file_arg), args)
-  if (length(hit) > 0L) {
-    return(dirname(normalizePath(sub(file_arg, "", args[hit[1L]]), winslash = "/", mustWork = TRUE)))
-  }
+# 0.1 Load libraries -------------------------------------------------------
 
-  normalizePath(getwd(), winslash = "/", mustWork = TRUE)
-}
+libs <- c(
+  
+  # General #
+  
+  "dplyr",        
+  "tidyr", 
+  "ggplot2",
+  "magrittr",
+  "writexl",
+  "fs",
+  "zip",          # CEX data is in ZIP files
+  "purrr",
+  "broom",
+  "ggforce",
+  "readxl",
+  "patchwork",
+  "readr",
 
-setwd(get_script_dir())
+  # Data manipulation #
+  
+  "data.table",   
+  "ipumsr",       # download CPS data
+  "quantmod",
+  "haven",        # read Autor & Dorn and CEX files (.dta/.sas7bdat)
+  "janitor",      
+  "stringr",
+  "jsonlite",
+  "lubridate",    # date handling
+  "arrow",        # for transforming large data into parquet
+  "zoo",
+  "xts",
+  "gt",
+  "scales",
+  "tikzDevice",
+  "here",
+  
+  # EDA #
+  
+    # Survey #
+  "srvyr",
+    # LP #
+  "fixest",        # regression / local projections later
+  "lpirfs",
+  "brms",          # for bayesian smoothing
+  "splines",       # for smoothing local projections
+  "sandwich",
+  
+    # FAVAR #
+  "FAVAR",
+  "fredr",         # for data retrieval from FRED
+  "seasonal",      # for seasonal adjustment
+  "imputeTS",      # for imputing before seasonal adjustment
+  "vars",          # for FAVAR
 
-# The exact-match replication below uses base R only.  The object is kept in the
-# same style as the final project main.R, where dependencies are declared in one
-# place.
-libs <- character(0)
+    # EXTRAS #
+  "showtext",
+  "sysfonts",
+  "kableExtra",
+  "kableExtra",
+  "Hmisc"
+)
 
+# Load each library quietly
 invisible(lapply(libs, function(pkg) {
   if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
 }))
 
 
-# 0.1 Paths ---------------------------------------------------------------
+# 0.2 Paths ---------------------------------------------------------------
 
 input_dir <- file.path("data")
 ref_dir <- file.path("reference")
@@ -54,15 +97,16 @@ dir.create(ref_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Remove a validation artifact from the first draft of the R port if it exists.
-unlink(file.path(out_dir, "validation_against_python_unsmoothed.csv"))
-
-
-# 0.2 Helper functions ----------------------------------------------------
+# 0.3 Helper functions ----------------------------------------------------
 
 source("functions.R")
 
 
-# 1. White (2022) replication --------------------------------------------
+# 1. Data build -----------------------------------------------------------
+
+source("1_Data.R")
+
+
+# 2. White (2022) replication --------------------------------------------
 
 source("2_LP.R")

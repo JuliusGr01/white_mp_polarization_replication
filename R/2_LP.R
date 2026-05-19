@@ -42,20 +42,26 @@ recessions <- data.frame(
 # STL are not identical at machine precision.
 
 fig12_reference <- file.path(ref_dir, "python_figures_1_2_series.csv")
+lp_panel_file <- file.path(input_dir, "employment_monthly_white_lp.csv")
 lp_reference <- file.path(ref_dir, "python_employment_monthly_white_lp.csv")
 extended_reference <- file.path(ref_dir, "python_employment_monthly_extended.csv")
 
 if (!file.exists(fig12_reference)) stop("Missing reference file: ", fig12_reference)
-if (!file.exists(lp_reference)) stop("Missing reference file: ", lp_reference)
+if (!file.exists(lp_panel_file) && !file.exists(lp_reference)) {
+  stop("Missing LP panel. Run 1_Data.R or provide reference file: ", lp_reference)
+}
 
 routine_ts_fig12 <- read_white_csv(fig12_reference)
 routine_ts_fig12$date <- as.Date(routine_ts_fig12$date)
 
-routine_ts_sa <- read_white_csv(lp_reference)
+if (file.exists(lp_panel_file)) {
+  routine_ts_sa <- read_white_csv(lp_panel_file)
+} else {
+  routine_ts_sa <- read_white_csv(lp_reference)
+}
 routine_ts_sa$date <- as.Date(routine_ts_sa$date)
 
 copy_if_present(fig12_reference, file.path(out_dir, "figures_1_2_series.csv"))
-copy_if_present(lp_reference, file.path(input_dir, "employment_monthly_white_lp.csv"))
 copy_if_present(extended_reference, file.path(input_dir, "employment_monthly_extended.csv"))
 
 

@@ -9,6 +9,14 @@ read_white_csv <- function(path, ...) {
   read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, ...)
 }
 
+write_white_csv <- function(x, path) {
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  old_digits <- getOption("digits")
+  on.exit(options(digits = old_digits), add = TRUE)
+  options(digits = 17)
+  write.csv(x, path, row.names = FALSE, na = "")
+}
+
 lag_vec <- function(x, n) {
   if (n == 0L) return(x)
   c(rep(NA_real_, n), x[seq_len(length(x) - n)])
@@ -22,8 +30,477 @@ lead_vec <- function(x, n) {
 copy_if_present <- function(from, to) {
   if (file.exists(from)) {
     dir.create(dirname(to), recursive = TRUE, showWarnings = FALSE)
-    file.copy(from, to, overwrite = TRUE)
+    invisible(file.copy(from, to, overwrite = TRUE))
   }
+}
+
+xml_unescape_white <- function(x) {
+  x <- gsub("&lt;", "<", x, fixed = TRUE)
+  x <- gsub("&gt;", ">", x, fixed = TRUE)
+  x <- gsub("&quot;", "\"", x, fixed = TRUE)
+  x <- gsub("&apos;", "'", x, fixed = TRUE)
+  x <- gsub("&amp;", "&", x, fixed = TRUE)
+  x
+}
+
+xlsx_col_to_index <- function(cell_ref) {
+  letters <- gsub("[^A-Za-z]", "", cell_ref)
+  chars <- strsplit(toupper(letters), "", fixed = TRUE)[[1]]
+  out <- 0L
+  for (ch in chars) out <- out * 26L + match(ch, LETTERS)
+  out
+}
+
+extract_xml_matches <- function(text, pattern) {
+  hit <- gregexpr(pattern, text, perl = TRUE)[[1]]
+  if (identical(hit[1], -1L)) return(character(0))
+  regmatches(text, list(hit))[[1]]
+}
+
+extract_xml_attr <- function(text, attr) {
+  pattern <- paste0(attr, "=\"([^\"]*)\"")
+  if (!grepl(pattern, text, perl = TRUE)) return(NA_character_)
+  sub(paste0(".*", pattern, ".*"), "\\1", text, perl = TRUE)
+}
+
+extract_xml_text_nodes <- function(text) {
+  nodes <- extract_xml_matches(text, "<t[^>]*>[\\s\\S]*?</t>")
+  if (length(nodes) == 0L) return("")
+  nodes <- gsub("<t[^>]*>", "", nodes, perl = TRUE)
+  nodes <- gsub("</t>", "", nodes, fixed = TRUE)
+  paste0(xml_unescape_white(nodes), collapse = "")
+}
+
+read_xlsx_first_sheet_base <- function(path) {
+  if (!file.exists(path)) stop("Missing workbook: ", path)
+
+  tmp <- tempfile("xlsx_")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  utils::unzip(path, exdir = tmp)
+  sheet_path <- file.path(tmp, "xl", "worksheets", "sheet1.xml")
+  if (!file.exists(sheet_path)) stop("Workbook has no xl/worksheets/sheet1.xml: ", path)
+
+  shared_strings <- character(0)
+  shared_path <- file.path(tmp, "xl", "sharedStrings.xml")
+  if (file.exists(shared_path)) {
+    shared_xml <- paste(readLines(shared_path, warn = FALSE, encoding = "UTF-8"), collapse = "")
+    si_nodes <- extract_xml_matches(shared_xml, "<si[\\s\\S]*?</si>")
+    shared_strings <- vapply(si_nodes, extract_xml_text_nodes, character(1))
+  }
+
+  sheet_xml <- paste(readLines(sheet_path, warn = FALSE, encoding = "UTF-8"), collapse = "")
+  row_nodes <- extract_xml_matches(sheet_xml, "<row[^>]*>[\\s\\S]*?</row>")
+  if (length(row_nodes) == 0L) stop("No rows found in workbook: ", path)
+
+  parsed_rows <- vector("list", length(row_nodes))
+  max_col <- 0L
+
+  for (i in seq_along(row_nodes)) {
+    cell_nodes <- extract_xml_matches(row_nodes[[i]], "<c[^>]*(?:>[\\s\\S]*?</c>|/>)")
+    values <- list()
+
+    for (cell in cell_nodes) {
+      ref <- extract_xml_attr(cell, "r")
+      col <- xlsx_col_to_index(ref)
+      max_col <- max(max_col, col)
+      type <- extract_xml_attr(cell, "t")
+
+      if (!is.na(type) && identical(type, "inlineStr")) {
+        value <- extract_xml_text_nodes(cell)
+      } else {
+        v_node <- extract_xml_matches(cell, "<v[^>]*>[\\s\\S]*?</v>")
+        if (length(v_node) == 0L) {
+          value <- ""
+        } else {
+          value <- gsub("<v[^>]*>", "", v_node[[1]], perl = TRUE)
+          value <- gsub("</v>", "", value, fixed = TRUE)
+          value <- xml_unescape_white(value)
+          if (!is.na(type) && identical(type, "s")) {
+            idx <- as.integer(value) + 1L
+            value <- shared_strings[[idx]]
+          }
+        }
+      }
+      values[[as.character(col)]] <- value
+    }
+    parsed_rows[[i]] <- values
+  }
+
+  matrix_out <- matrix("", nrow = length(parsed_rows), ncol = max_col)
+  for (i in seq_along(parsed_rows)) {
+    row_values <- parsed_rows[[i]]
+    for (nm in names(row_values)) {
+      matrix_out[i, as.integer(nm)] <- row_values[[nm]]
+    }
+  }
+
+  header <- trimws(matrix_out[1, ])
+  out <- as.data.frame(matrix_out[-1, , drop = FALSE], stringsAsFactors = FALSE, check.names = FALSE)
+  names(out) <- header
+  out
+}
+
+parse_month_year_white <- function(x) {
+  m <- regexec("^\\s*([0-9]{4})[_-]([0-9]{1,2})\\s*$", as.character(x))
+  parts <- regmatches(as.character(x), m)
+  vapply(parts, function(p) {
+    if (length(p) != 3L) stop("Could not parse Month_Year value: ", x)
+    sprintf("%04d-%02d-01", as.integer(p[[2]]), as.integer(p[[3]]))
+  }, character(1))
+}
+
+parse_employment_value_white <- function(x) {
+  text <- gsub("\u00a0", "", trimws(as.character(x)), fixed = TRUE)
+  out <- rep(NA_real_, length(text))
+  has_comma <- grepl(",", text, fixed = TRUE)
+  out[has_comma] <- as.numeric(gsub(",", "", text[has_comma], fixed = TRUE))
+  no_comma <- !has_comma & nzchar(text)
+  numeric <- as.numeric(text[no_comma])
+  decimal_noninteger <- grepl(".", text[no_comma], fixed = TRUE) & numeric != floor(numeric)
+  numeric[decimal_noninteger] <- round(numeric[decimal_noninteger] * 1000)
+  out[no_comma] <- numeric
+  out
+}
+
+build_cps_ee_from_excel <- function(xlsx_path,
+                                    crosswalk_path,
+                                    out_dir) {
+  raw <- read_xlsx_first_sheet_base(xlsx_path)
+  required <- c("value", "occupation", "period", "Month_Year", "occ_pos")
+  missing <- setdiff(required, names(raw))
+  if (length(missing) > 0L) stop("Workbook missing columns: ", paste(missing, collapse = ", "))
+
+  raw$occupation <- trimws(raw$occupation)
+  raw$period <- trimws(raw$period)
+  raw$occ_pos <- as.integer(raw$occ_pos)
+  raw$value_thousands <- parse_employment_value_white(raw$value)
+  raw$ym <- as.Date(parse_month_year_white(raw$Month_Year))
+  raw$year <- as.integer(format(raw$ym, "%Y"))
+  raw$month <- as.integer(format(raw$ym, "%m"))
+
+  raw$value_thousands_original <- raw$value_thousands
+  raw$value_correction_note <- ""
+
+  correction_1973 <- raw$Month_Year == "1973_08" &
+    raw$period == "021972 - 011974" &
+    raw$occ_pos == 30L
+  correction_1981 <- raw$Month_Year == "1981_04" &
+    raw$period == "021974 - 121982" &
+    raw$occ_pos == 45L
+
+  if (sum(correction_1973) != 1L) stop("1973_08 value correction did not match exactly one row.")
+  if (sum(correction_1981) != 1L) stop("1981_04 value correction did not match exactly one row.")
+
+  raw$value_thousands[correction_1973] <- 2726
+  raw$value_correction_note[correction_1973] <- "Corrected from 3726 using the transport-equipment parent residual: 3174 - 448."
+  raw$value_thousands[correction_1981] <- 810
+  raw$value_correction_note[correction_1981] <- "Corrected from 210 using the farm-laborers parent residual: 1030 - 220."
+
+  crosswalk <- read_white_csv(crosswalk_path)
+  crosswalk$occ_pos <- as.integer(crosswalk$occ_pos)
+  classified <- merge(
+    raw,
+    crosswalk,
+    by = c("period", "occ_pos", "occupation"),
+    all.x = TRUE,
+    sort = FALSE
+  )
+  if (any(is.na(classified$is_leaf))) {
+    bad <- unique(classified[is.na(classified$is_leaf), c("period", "occ_pos", "occupation")])
+    stop("Missing crosswalk rows. First unmatched: ", paste(utils::capture.output(print(utils::head(bad, 10))), collapse = " "))
+  }
+
+  classified$is_leaf <- classified$is_leaf %in% c(TRUE, "True", "TRUE", "true", "1", 1)
+  leaf <- classified[classified$is_leaf, ]
+  leaf$employment <- leaf$value_thousands * 1000
+
+  classified_leaf_groups <- leaf[!is.na(leaf$alm_group) & leaf$alm_group != "", ]
+  routine <- aggregate(employment ~ ym, classified_leaf_groups[classified_leaf_groups$alm_group == "Routine", ], sum)
+  abstract <- aggregate(employment ~ ym, classified_leaf_groups[classified_leaf_groups$alm_group == "Abstract", ], sum)
+  manual <- aggregate(employment ~ ym, classified_leaf_groups[classified_leaf_groups$alm_group == "Manual", ], sum)
+  names(routine)[2] <- "routine_emp_abs"
+  names(abstract)[2] <- "abstract_emp_abs"
+  names(manual)[2] <- "manual_emp_abs"
+
+  panel <- Reduce(function(x, y) merge(x, y, by = "ym", all = TRUE), list(routine, abstract, manual))
+  panel[is.na(panel)] <- 0
+  panel <- panel[order(panel$ym), ]
+  panel$nonroutine_emp_abs <- panel$abstract_emp_abs + panel$manual_emp_abs
+  panel$total_emp_abs <- panel$routine_emp_abs + panel$nonroutine_emp_abs
+  panel$routine_emp_rel_emp <- panel$routine_emp_abs / panel$total_emp_abs
+  panel$nonroutine_emp_rel_emp <- panel$nonroutine_emp_abs / panel$total_emp_abs
+  panel$routine_emp_share <- panel$routine_emp_rel_emp
+  panel$log_routine_emp <- log(panel$routine_emp_abs)
+  panel$log_nonroutine_emp <- log(panel$nonroutine_emp_abs)
+  panel$log_abstract_emp <- log(panel$abstract_emp_abs)
+  panel$log_manual_emp <- log(panel$manual_emp_abs)
+  panel$log_total_emp <- log(panel$total_emp_abs)
+
+  panel <- panel[, c(
+    "ym", "routine_emp_abs", "nonroutine_emp_abs", "abstract_emp_abs", "manual_emp_abs",
+    "total_emp_abs", "routine_emp_rel_emp", "nonroutine_emp_rel_emp", "routine_emp_share",
+    "log_routine_emp", "log_nonroutine_emp", "log_abstract_emp", "log_manual_emp", "log_total_emp"
+  )]
+
+  employment_monthly <- data.frame(
+    date = panel$ym,
+    routine_emp = panel$routine_emp_abs,
+    nonroutine_emp = panel$nonroutine_emp_abs,
+    total_emp = panel$total_emp_abs,
+    routine_share = panel$routine_emp_share,
+    log_total = panel$log_total_emp,
+    log_routine = panel$log_routine_emp,
+    log_nonroutine = panel$log_nonroutine_emp
+  )
+
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  write_white_csv(leaf[order(leaf$ym, leaf$occ_pos), ], file.path(out_dir, "cps_ee_1969_1982_leaf_alm_long.csv"))
+  write_white_csv(panel, file.path(out_dir, "cps_ee_1969_1982_alm_panel.csv"))
+  write_white_csv(employment_monthly, file.path(out_dir, "cps_ee_1969_1982_employment_monthly.csv"))
+  write_white_csv(crosswalk, file.path(out_dir, "cps_ee_1969_1982_alm_crosswalk.csv"))
+
+  employment_monthly
+}
+
+load_bls_series_from_raw <- function(series_id,
+                                     all_data_path) {
+  raw <- read.delim(
+    all_data_path,
+    header = TRUE,
+    sep = "\t",
+    stringsAsFactors = FALSE,
+    strip.white = TRUE,
+    comment.char = "",
+    quote = "",
+    fill = TRUE
+  )
+  raw <- raw[raw$series_id == series_id & grepl("^M[0-9]{2}$", raw$period) & raw$period != "M13", ]
+  raw$month <- as.integer(sub("^M", "", raw$period))
+  raw$date <- as.Date(sprintf("%04d-%02d-01", as.integer(raw$year), raw$month))
+  raw$value <- suppressWarnings(as.numeric(raw$value))
+  raw <- raw[!is.na(raw$date) & !is.na(raw$value), c("date", "value")]
+  raw[order(raw$date), ]
+}
+
+build_bls_occ_panel_from_raw <- function(all_data_path,
+                                         out_path = NULL) {
+  routine_ids <- c("LNU02032205", "LNU02032208", "LNU02032212")
+  nonroutine_ids <- c("LNU02032201", "LNU02032204")
+  series_ids <- c(routine_ids, nonroutine_ids)
+
+  raw <- do.call(rbind, lapply(series_ids, function(series_id) {
+    x <- load_bls_series_from_raw(series_id, all_data_path)
+    data.frame(series_id = series_id, date = x$date, employed = x$value * 1000)
+  }))
+
+  raw$is_routine <- raw$series_id %in% routine_ids
+  routine <- aggregate(employed ~ date, raw[raw$is_routine, ], sum)
+  nonroutine <- aggregate(employed ~ date, raw[!raw$is_routine, ], sum)
+  names(routine)[2] <- "routine_emp"
+  names(nonroutine)[2] <- "nonroutine_emp"
+
+  out <- merge(routine, nonroutine, by = "date", all = TRUE)
+  out <- out[order(out$date), ]
+  out$total_emp <- out$routine_emp + out$nonroutine_emp
+  out$routine_share <- out$routine_emp / out$total_emp
+  out$log_total <- log(out$total_emp)
+  out$log_routine <- log(out$routine_emp)
+  out$log_nonroutine <- log(out$nonroutine_emp)
+  out <- out[, c("date", "routine_emp", "nonroutine_emp", "total_emp", "routine_share", "log_total", "log_routine", "log_nonroutine")]
+
+  if (!is.null(out_path)) write_white_csv(out, out_path)
+  out
+}
+
+build_extended_panel_from_cps_and_bls_raw <- function(cps_ee,
+                                                      bls_raw_path,
+                                                      out_path = NULL) {
+  bls <- build_bls_occ_panel_from_raw(bls_raw_path)
+  cps_ee <- cps_ee[cps_ee$date >= as.Date("1969-01-01") & cps_ee$date < as.Date("1983-01-01"), ]
+  bls <- bls[bls$date >= as.Date("1983-01-01"), ]
+  out <- rbind(cps_ee, bls)
+  out <- out[order(out$date), ]
+  out <- out[!duplicated(out$date), ]
+  if (!is.null(out_path)) write_white_csv(out, out_path)
+  out
+}
+
+parse_mtgdate_white <- function(x) {
+  text <- sub("\\.0$", "", trimws(as.character(x)))
+  out <- as.Date(rep(NA_character_, length(text)))
+
+  yyyymmdd <- grepl("^(19|20)[0-9]{6}$", text)
+  out[yyyymmdd] <- as.Date(text[yyyymmdd], format = "%Y%m%d")
+
+  yyyymm <- grepl("^(19|20)[0-9]{2}(0[1-9]|1[0-2])$", text) & is.na(out)
+  out[yyyymm] <- as.Date(paste0(text[yyyymm], "01"), format = "%Y%m%d")
+
+  mmddyy <- grepl("^[0-9]{5,6}$", text) & is.na(out)
+  if (any(mmddyy)) {
+    padded <- sprintf("%06d", as.integer(text[mmddyy]))
+    mm <- as.integer(substr(padded, 1, 2))
+    dd <- as.integer(substr(padded, 3, 4))
+    yy <- as.integer(substr(padded, 5, 6))
+    yyyy <- ifelse(yy <= 30L, 2000L + yy, 1900L + yy)
+    out[mmddyy] <- as.Date(sprintf("%04d-%02d-%02d", yyyy, mm, dd))
+  }
+
+  numeric <- suppressWarnings(as.numeric(text))
+  stata_like <- is.na(out) & !is.na(numeric) & numeric >= 2500 & numeric <= 20000
+  out[stata_like] <- as.Date(numeric[stata_like], origin = "1960-01-01")
+  excel_like <- is.na(out) & !is.na(numeric) & numeric >= 20000 & numeric <= 50000
+  out[excel_like] <- as.Date(numeric[excel_like], origin = "1899-12-30")
+
+  month_label <- is.na(out)
+  if (any(month_label)) {
+    normalized <- tolower(gsub("-", " ", text[month_label], fixed = TRUE))
+    normalized <- gsub("\\s+", " ", trimws(normalized))
+    month_lookup <- c(
+      jan = 1L, january = 1L,
+      feb = 2L, february = 2L,
+      mar = 3L, march = 3L,
+      apr = 4L, april = 4L,
+      may = 5L,
+      jun = 6L, june = 6L,
+      jul = 7L, july = 7L,
+      aug = 8L, august = 8L,
+      sep = 9L, sept = 9L, september = 9L,
+      oct = 10L, october = 10L,
+      nov = 11L, november = 11L,
+      dec = 12L, december = 12L
+    )
+    parsed <- vapply(normalized, function(value) {
+      pieces <- strsplit(value, " ", fixed = TRUE)[[1]]
+      if (length(pieces) != 2L || !pieces[[1]] %in% names(month_lookup)) return(NA_character_)
+      yy <- suppressWarnings(as.integer(pieces[[2]]))
+      if (is.na(yy)) return(NA_character_)
+      yyyy <- if (yy < 100L) {
+        if (yy <= 30L) 2000L + yy else 1900L + yy
+      } else {
+        yy
+      }
+      sprintf("%04d-%02d-01", yyyy, unname(month_lookup[[pieces[[1]]]]))
+    }, character(1))
+    parsed <- as.Date(parsed)
+    out[month_label] <- parsed
+    }
+  out
+}
+
+load_rr_shocks_white <- function(path) {
+  raw <- read.csv2(path, stringsAsFactors = FALSE, check.names = FALSE)
+  date_col <- names(raw)[toupper(names(raw)) == "MTGDATE"][1]
+  shock_col <- names(raw)[length(names(raw))]
+  if (is.na(date_col)) stop("RR shock file must contain MTGDATE.")
+  date <- as.Date(format(parse_mtgdate_white(raw[[date_col]]), "%Y-%m-01"))
+  shock <- as.numeric(gsub(",", ".", trimws(as.character(raw[[shock_col]])), fixed = TRUE))
+  d <- data.frame(date = date, shock = shock)
+  d <- d[!is.na(d$date) & !is.na(d$shock), ]
+  monthly <- aggregate(shock ~ date, d, sum)
+  full <- data.frame(date = seq(min(monthly$date), max(monthly$date), by = "month"))
+  monthly <- merge(full, monthly, by = "date", all.x = TRUE)
+  monthly$shock[is.na(monthly$shock)] <- 0
+  monthly[order(monthly$date), ]
+}
+
+add_statsmodels_stl_sa <- function(panel) {
+  tmp_in <- tempfile(fileext = ".csv")
+  tmp_out <- tempfile(fileext = ".csv")
+  write.csv(panel, tmp_in, row.names = FALSE)
+
+  py_code <- paste(
+    "import numpy as np, pandas as pd",
+    "from statsmodels.tsa.seasonal import STL",
+    "inp, outp = r'''__IN__''', r'''__OUT__'''",
+    "df = pd.read_csv(inp, parse_dates=['date'])",
+    "def sa(s):",
+    "    y = pd.to_numeric(s, errors='raise').astype(float)",
+    "    fit = STL(np.log(y.to_numpy()), period=12, seasonal=13, robust=True).fit()",
+    "    return np.exp(np.log(y.to_numpy()) - fit.seasonal)",
+    "df['routine_emp_sa'] = sa(df['routine_emp'])",
+    "df['nonroutine_emp_sa'] = sa(df['nonroutine_emp'])",
+    "df['total_emp_sa'] = sa(df['total_emp'])",
+    "df['routine_share_sa'] = df['routine_emp_sa'] / df['total_emp_sa']",
+    "df['log_total_sa'] = np.log(df['total_emp_sa'])",
+    "df['log_routine_sa'] = np.log(df['routine_emp_sa'])",
+    "df['log_nonroutine_sa'] = np.log(df['nonroutine_emp_sa'])",
+    "df.to_csv(outp, index=False)",
+    sep = "\n"
+  )
+  py_code <- gsub("__IN__", gsub("\\\\", "/", tmp_in), py_code, fixed = TRUE)
+  py_code <- gsub("__OUT__", gsub("\\\\", "/", tmp_out), py_code, fixed = TRUE)
+
+  status <- system2("python", c("-c", shQuote(py_code)))
+  if (!identical(status, 0L)) stop("Python statsmodels STL seasonal adjustment failed.")
+  out <- read_white_csv(tmp_out)
+  out$date <- as.Date(out$date)
+  out
+}
+
+build_white_lp_panel_from_raw <- function(extended_panel,
+                                          bls_raw_path,
+                                          rr_shock_path,
+                                          out_path = NULL) {
+  shocks <- load_rr_shocks_white(rr_shock_path)
+  names(shocks)[names(shocks) == "shock"] <- "eps"
+  panel <- merge(extended_panel, shocks, by = "date", all.x = TRUE)
+  panel <- panel[panel$date >= as.Date("1969-01-01") & panel$date <= as.Date("2020-12-31"), ]
+  panel <- panel[order(panel$date), ]
+  panel <- add_statsmodels_stl_sa(panel)
+
+  total_nonag <- load_bls_series_from_raw("LNS12032187", bls_raw_path)
+  names(total_nonag)[names(total_nonag) == "value"] <- "total_nonag_employment_thousands"
+  total_nonag$total_nonag_emp <- total_nonag$total_nonag_employment_thousands * 1000
+  panel <- merge(panel, total_nonag[, c("date", "total_nonag_emp")], by = "date", all.x = TRUE)
+  panel <- panel[order(panel$date), ]
+  if (any(is.na(panel$total_nonag_emp))) stop("Missing BLS nonagricultural employment in final LP panel.")
+
+  panel$routine_share <- panel$routine_share_sa
+  panel$total_emp <- panel$total_nonag_emp
+  panel$routine_emp <- panel$routine_share * panel$total_emp
+  panel$nonroutine_emp <- (1 - panel$routine_share) * panel$total_emp
+  panel$log_total <- log(panel$total_emp)
+  panel$log_routine <- log(panel$routine_emp)
+  panel$log_nonroutine <- log(panel$nonroutine_emp)
+  panel <- panel[panel$date >= as.Date("1969-01-01") & panel$date <= as.Date("2008-12-31"), ]
+
+  panel <- panel[, c(
+    "date", "routine_emp", "nonroutine_emp", "total_emp", "routine_share",
+    "log_total", "log_routine", "log_nonroutine", "eps",
+    "routine_emp_sa", "nonroutine_emp_sa", "total_emp_sa", "routine_share_sa",
+    "log_total_sa", "log_routine_sa", "log_nonroutine_sa", "total_nonag_emp"
+  )]
+
+  if (!is.null(out_path)) write_white_csv(panel, out_path)
+  panel
+}
+
+validate_panel_against_reference <- function(built_path,
+                                             reference_path,
+                                             out_path) {
+  built <- read_white_csv(built_path)
+  ref <- read_white_csv(reference_path)
+  common <- intersect(names(built), names(ref))
+  if (!identical(names(built), names(ref))) {
+    warning("Column names differ between built and reference panel.")
+  }
+  rows <- list()
+  for (col in common) {
+    bx <- suppressWarnings(as.numeric(built[[col]]))
+    rx <- suppressWarnings(as.numeric(ref[[col]]))
+    numeric_col <- any(!is.na(bx)) || any(!is.na(rx))
+    if (numeric_col) {
+      rows[[col]] <- data.frame(column = col, max_abs_diff = max(abs(bx - rx), na.rm = TRUE))
+    } else {
+      rows[[col]] <- data.frame(column = col, max_abs_diff = if (identical(as.character(built[[col]]), as.character(ref[[col]]))) 0 else NA_real_)
+    }
+  }
+  out <- do.call(rbind, rows)
+  row.names(out) <- NULL
+  write_white_csv(out, out_path)
+  out
 }
 
 
@@ -381,7 +858,7 @@ write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
 
   out <- do.call(rbind, rows)
   row.names(out) <- NULL
-  write.csv(out, out_path, row.names = FALSE)
+  write_white_csv(out, out_path)
   out
 }
 
@@ -396,7 +873,7 @@ write_fev_csv <- function(fev_rows, out_path) {
   }
 
   wide <- wide[order(wide$horizon), ]
-  write.csv(wide, out_path, row.names = FALSE)
+  write_white_csv(wide, out_path)
   invisible(wide)
 }
 
@@ -520,7 +997,7 @@ validate_against_python <- function(r_irfs,
   merged$coef_plotted_abs_diff <- abs(merged$coef_plotted_r - as.numeric(merged$coef_plotted_python))
   merged$se_plotted_abs_diff <- abs(merged$se_plotted_r - as.numeric(merged$se_plotted_python))
 
-  write.csv(merged, file.path(output_dir, "validation_against_python.csv"), row.names = FALSE)
+  write_white_csv(merged, file.path(output_dir, "validation_against_python.csv"))
 
   message(
     "Validation against Python reference: max raw coef diff = ",
