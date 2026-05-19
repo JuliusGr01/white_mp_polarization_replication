@@ -1,271 +1,37 @@
-month_start <- function(x) {
-  as.Date(format(as.Date(x), "%Y-%m-01"))
-}
+########################
+###### FUNCTIONS #######
+########################
 
-year_num <- function(x) as.integer(format(as.Date(x), "%Y"))
-month_num <- function(x) as.integer(format(as.Date(x), "%m"))
+
+# 1. Small helpers --------------------------------------------------------
+
+read_white_csv <- function(path, ...) {
+  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, ...)
+}
 
 lag_vec <- function(x, n) {
   if (n == 0L) return(x)
-  c(rep(NA, n), x[seq_len(length(x) - n)])
+  c(rep(NA_real_, n), x[seq_len(length(x) - n)])
 }
 
 lead_vec <- function(x, n) {
   if (n == 0L) return(x)
-  c(x[(n + 1L):length(x)], rep(NA, n))
+  c(x[(n + 1L):length(x)], rep(NA_real_, n))
 }
 
-read_csv_base <- function(path, ...) {
-  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, ...)
-}
-
-as_numeric_loose <- function(x) {
-  if (is.numeric(x)) return(x)
-  as.numeric(gsub(",", ".", trimws(as.character(x)), fixed = TRUE))
-}
-
-load_bls_monthly_series <- function(series_id, source_path = file.path(DATA_DIR, "bls_raw", "ln.data.1.AllData")) {
-  raw <- read.delim(
-    source_path,
-    header = TRUE,
-    sep = "\t",
-    stringsAsFactors = FALSE,
-    strip.white = TRUE,
-    comment.char = "",
-    quote = "",
-    fill = TRUE
-  )
-  raw <- raw[raw$series_id == series_id & grepl("^M[0-9]{2}$", raw$period) & raw$period != "M13", ]
-  raw$month <- as.integer(sub("^M", "", raw$period))
-  raw$date <- as.Date(sprintf("%04d-%02d-01", as.integer(raw$year), raw$month))
-  raw$value <- as.numeric(raw$value)
-  raw <- raw[!is.na(raw$date) & !is.na(raw$value), c("date", "value")]
-  raw[order(raw$date), ]
-}
-
-build_employment_panel <- function(source_path = file.path(DATA_DIR, "bls_occ_employed_monthly.csv")) {
-  raw <- read_csv_base(source_path)
-  expected <- c(ROUTINE_SERIES_IDS, NONROUTINE_SERIES_IDS)
-  missing <- setdiff(expected, unique(raw$series_id))
-  if (length(missing) > 0L) {
-    stop("Missing expected BLS occupation series: ", paste(missing, collapse = ", "))
+copy_if_present <- function(from, to) {
+  if (file.exists(from)) {
+    dir.create(dirname(to), recursive = TRUE, showWarnings = FALSE)
+    file.copy(from, to, overwrite = TRUE)
   }
-
-  raw <- raw[raw$series_id %in% expected, ]
-  raw$date <- as.Date(raw$date)
-  raw$employed <- as.numeric(raw$employed_thousands) * 1000
-  raw$is_routine <- raw$series_id %in% ROUTINE_SERIES_IDS
-  raw <- raw[!is.na(raw$date) & !is.na(raw$employed), ]
-
-  routine <- aggregate(employed ~ date, raw[raw$is_routine, ], sum)
-  nonroutine <- aggregate(employed ~ date, raw[!raw$is_routine, ], sum)
-  names(routine)[2] <- "routine_emp"
-  names(nonroutine)[2] <- "nonroutine_emp"
-  out <- merge(routine, nonroutine, by = "date", all = TRUE)
-  out <- out[order(out$date), ]
-  out$total_emp <- out$routine_emp + out$nonroutine_emp
-  out$routine_share <- out$routine_emp / out$total_emp
-  out$log_total <- log(out$total_emp)
-  out$log_routine <- log(out$routine_emp)
-  out$log_nonroutine <- log(out$nonroutine_emp)
-  out[, c(
-    "date", "routine_emp", "nonroutine_emp", "total_emp", "routine_share",
-    "log_total", "log_routine", "log_nonroutine"
-  )]
 }
 
-build_extended_employment_panel <- function(
-    ee_path = file.path(DATA_DIR, "cps_ee_1969_1982_employment_monthly.csv"),
-    bls_source_path = file.path(DATA_DIR, "bls_occ_employed_monthly.csv")) {
-  if (!file.exists(ee_path)) stop("Missing historical E&E panel: ", ee_path)
-  if (!file.exists(bls_source_path)) stop("Missing BLS occupation panel: ", bls_source_path)
 
-  required <- c(
-    "date", "routine_emp", "nonroutine_emp", "total_emp", "routine_share",
-    "log_total", "log_routine", "log_nonroutine"
-  )
-  ee <- read_csv_base(ee_path)
-  missing <- setdiff(required, names(ee))
-  if (length(missing) > 0L) stop("Historical E&E panel is missing: ", paste(missing, collapse = ", "))
-  ee$date <- as.Date(ee$date)
-  ee <- ee[ee$date >= as.Date("1969-01-01") & ee$date < as.Date("1983-01-01"), required]
+# 2. Local projections ----------------------------------------------------
 
-  bls <- build_employment_panel(bls_source_path)
-  bls <- bls[bls$date >= as.Date("1983-01-01"), required]
-
-  out <- rbind(ee, bls)
-  out <- out[order(out$date), ]
-  out <- out[!duplicated(out$date), ]
-  expected_months <- seq(min(out$date), max(out$date), by = "month")
-  missing_months <- setdiff(as.character(expected_months), as.character(out$date))
-  if (length(missing_months) > 0L) {
-    stop("Extended employment panel is not monthly-continuous. First missing: ", paste(head(missing_months, 12), collapse = ", "))
-  }
-  out
-}
-
-seasonally_adjust_positive_series <- function(series, dates) {
-  y <- as.numeric(series)
-  if (any(!is.finite(y)) || any(y <= 0)) {
-    stop("Seasonal adjustment requires a complete positive series.")
-  }
-  start <- c(year_num(min(dates)), month_num(min(dates)))
-  y_ts <- ts(log(y), frequency = 12, start = start)
-  fit <- stats::stl(y_ts, s.window = 13, robust = TRUE)
-  as.numeric(exp(as.numeric(y_ts) - as.numeric(fit$time.series[, "seasonal"])))
-}
-
-add_employment_sa_columns <- function(panel) {
-  out <- panel
-  out$routine_emp_sa <- seasonally_adjust_positive_series(out$routine_emp, out$date)
-  out$nonroutine_emp_sa <- seasonally_adjust_positive_series(out$nonroutine_emp, out$date)
-  out$total_emp_sa <- seasonally_adjust_positive_series(out$total_emp, out$date)
-  out$routine_share_sa <- out$routine_emp_sa / out$total_emp_sa
-  out$log_total_sa <- log(out$total_emp_sa)
-  out$log_routine_sa <- log(out$routine_emp_sa)
-  out$log_nonroutine_sa <- log(out$nonroutine_emp_sa)
-  out
-}
-
-zfill <- function(x, width) {
-  x <- as.character(x)
-  paste0(vapply(pmax(width - nchar(x), 0L), function(n) paste(rep("0", n), collapse = ""), character(1)), x)
-}
-
-parse_mtgdate <- function(values) {
-  text <- trimws(as.character(values))
-  text <- sub("\\.0$", "", text)
-  out <- as.Date(rep(NA_character_, length(text)))
-
-  yyyymmdd <- grepl("^(19|20)[0-9]{6}$", text)
-  out[yyyymmdd] <- as.Date(text[yyyymmdd], format = "%Y%m%d")
-
-  yyyymm <- grepl("^(19|20)[0-9]{2}(0[1-9]|1[0-2])$", text) & is.na(out)
-  out[yyyymm] <- as.Date(paste0(text[yyyymm], "01"), format = "%Y%m%d")
-
-  mmddyy <- grepl("^[0-9]{5,6}$", text) & is.na(out)
-  if (any(mmddyy)) {
-    padded <- zfill(text[mmddyy], 6L)
-    mm <- as.integer(substr(padded, 1L, 2L))
-    dd <- as.integer(substr(padded, 3L, 4L))
-    yy <- as.integer(substr(padded, 5L, 6L))
-    yyyy <- ifelse(yy <= 30L, 2000L + yy, 1900L + yy)
-    out[mmddyy] <- as.Date(sprintf("%04d-%02d-%02d", yyyy, mm, dd))
-  }
-
-  numeric <- suppressWarnings(as.numeric(text))
-  remaining <- is.na(out) & !is.na(numeric)
-  stata_like <- remaining & numeric >= 2500 & numeric <= 20000
-  out[stata_like] <- as.Date(numeric[stata_like], origin = "1960-01-01")
-
-  excel_like <- is.na(out) & !is.na(numeric) & numeric >= 20000 & numeric <= 50000
-  out[excel_like] <- as.Date(numeric[excel_like], origin = "1899-12-30")
-
-  string_like <- is.na(out) & is.na(numeric)
-  if (any(string_like)) {
-    formats <- c("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y", "%b %Y", "%b %y", "%B %Y", "%B %y")
-    for (fmt in formats) {
-      idx <- string_like & is.na(out)
-      if (!any(idx)) break
-      out[idx] <- as.Date(text[idx], format = fmt)
-    }
-  }
-  out
-}
-
-load_rr_shock_monthly <- function(path = file.path(DATA_DIR, "RR_MPshocks_Updated(GBforecasts).csv")) {
-  if (!file.exists(path)) stop("Missing Romer-Romer shock file: ", path)
-  raw <- read.csv2(path, stringsAsFactors = FALSE, check.names = FALSE)
-  date_col <- names(raw)[toupper(names(raw)) == "MTGDATE"][1]
-  if (is.na(date_col)) stop("Shock file must contain MTGDATE.")
-  shock_col <- names(raw)[length(names(raw))]
-  if (identical(shock_col, date_col)) stop("Shock file must contain a shock column after MTGDATE.")
-
-  d <- data.frame(
-    date = month_start(parse_mtgdate(raw[[date_col]])),
-    shock = as_numeric_loose(raw[[shock_col]])
-  )
-  d <- d[!is.na(d$date) & !is.na(d$shock), ]
-  if (nrow(d) == 0L) stop("Could not parse valid meeting dates/shocks.")
-  monthly <- aggregate(shock ~ date, d, sum)
-  full <- data.frame(date = seq(min(monthly$date), max(monthly$date), by = "month"))
-  monthly <- merge(full, monthly, by = "date", all.x = TRUE)
-  monthly$shock[is.na(monthly$shock)] <- 0
-  monthly[order(monthly$date), ]
-}
-
-merge_monthly_panel <- function() {
-  emp <- build_extended_employment_panel()
-  write.csv(emp, file.path(DATA_DIR, "employment_monthly_extended.csv"), row.names = FALSE)
-  shock <- load_rr_shock_monthly()
-  names(shock)[names(shock) == "shock"] <- "eps"
-  merged <- merge(emp, shock, by = "date", all.x = TRUE)
-  merged <- merged[order(merged$date), ]
-  merged <- merged[merged$date >= START_DATE & merged$date <= END_DATE, ]
-  row.names(merged) <- NULL
-  merged
-}
-
-build_white_lp_panel <- function() {
-  reference_panel <- file.path(REFERENCE_DIR, "python_employment_monthly_white_lp.csv")
-  if (isTRUE(USE_PYTHON_PIPELINE_PANELS) && file.exists(reference_panel)) {
-    panel <- read_csv_base(reference_panel)
-    panel$date <- as.Date(panel$date)
-    file.copy(reference_panel, file.path(DATA_DIR, "employment_monthly_white_lp.csv"), overwrite = TRUE)
-    return(panel)
-  }
-
-  panel <- add_employment_sa_columns(merge_monthly_panel())
-  total_nonag <- load_bls_monthly_series(TOTAL_NONAG_EMPLOYMENT_SERIES_ID)
-  names(total_nonag)[names(total_nonag) == "value"] <- "total_nonag_employment_thousands"
-  total_nonag$total_nonag_emp <- total_nonag$total_nonag_employment_thousands * 1000
-
-  panel <- merge(panel, total_nonag[, c("date", "total_nonag_emp")], by = "date", all.x = TRUE)
-  panel <- panel[order(panel$date), ]
-  if (any(is.na(panel$total_nonag_emp))) {
-    missing <- format(head(panel$date[is.na(panel$total_nonag_emp)], 12), "%Y-%m")
-    stop("Missing aggregate nonagricultural employment for: ", paste(missing, collapse = ", "))
-  }
-
-  panel$routine_share <- panel$routine_share_sa
-  panel$total_emp <- panel$total_nonag_emp
-  panel$routine_emp <- panel$routine_share * panel$total_emp
-  panel$nonroutine_emp <- (1 - panel$routine_share) * panel$total_emp
-  panel$log_total <- log(panel$total_emp)
-  panel$log_routine <- log(panel$routine_emp)
-  panel$log_nonroutine <- log(panel$nonroutine_emp)
-  panel <- panel[panel$date >= START_DATE & panel$date <= SHOCK_END_DATE, ]
-  row.names(panel) <- NULL
-  write.csv(panel, file.path(DATA_DIR, "employment_monthly_white_lp.csv"), row.names = FALSE)
-  panel
-}
-
-build_descriptive_panel <- function() {
-  reference_panel <- file.path(REFERENCE_DIR, "python_figures_1_2_series.csv")
-  if (isTRUE(USE_PYTHON_PIPELINE_PANELS) && file.exists(reference_panel)) {
-    panel <- read_csv_base(reference_panel)
-    panel$date <- as.Date(panel$date)
-    return(panel)
-  }
-
-  emp <- build_extended_employment_panel()
-  pop <- load_bls_monthly_series(POPULATION_SERIES_ID)
-  names(pop)[names(pop) == "value"] <- "civilian_noninstitutional_population_thousands"
-  panel <- merge(emp, pop, by = "date", all = FALSE)
-  panel <- panel[order(panel$date), ]
-  panel <- add_employment_sa_columns(panel)
-  panel$population <- panel$civilian_noninstitutional_population_thousands * 1000
-  panel$routine_emp_per_capita <- panel$routine_emp / panel$population
-  panel$routine_emp_per_capita_sa <- panel$routine_emp_sa / panel$population
-  panel$routine_share_percent <- panel$routine_share * 100
-  panel$routine_share_percent_sa <- panel$routine_share_sa * 100
-  end_date <- min(END_DATE, max(panel$date))
-  panel <- panel[panel$date >= START_DATE & panel$date <= end_date, ]
-  row.names(panel) <- NULL
-  panel
-}
-
-control_cols <- function(n_lag_y, n_lag_eps, include_time_trend = LP_INCLUDE_TIME_TREND) {
+control_cols_white <- function(n_lag_y,
+                               n_lag_eps,
+                               include_time_trend = FALSE) {
   cols <- "const"
   if (include_time_trend) cols <- c(cols, "time_trend")
   cols <- c(cols, paste0("y_L", seq_len(n_lag_y)))
@@ -273,245 +39,346 @@ control_cols <- function(n_lag_y, n_lag_eps, include_time_trend = LP_INCLUDE_TIM
   cols
 }
 
-build_design <- function(df, dep_level, shock, n_lag_y, n_lag_eps) {
-  out <- df
-  out$const <- 1
-  if (LP_INCLUDE_TIME_TREND) out$time_trend <- seq_len(nrow(out)) - 1
-  if (identical(LP_Y_LAG_TRANSFORM, "level")) {
-    y_lag_source <- out[[dep_level]]
-  } else if (identical(LP_Y_LAG_TRANSFORM, "diff")) {
-    y_lag_source <- c(NA, diff(out[[dep_level]]))
+build_design_white <- function(data,
+                               y_var,
+                               shock_var,
+                               n_lag_y,
+                               n_lag_eps,
+                               y_lag_transform = "diff",
+                               include_time_trend = FALSE) {
+  df0 <- data[order(data$date), ]
+  df0$const <- 1
+  if (include_time_trend) df0$time_trend <- seq_len(nrow(df0)) - 1
+
+  if (identical(y_lag_transform, "level")) {
+    y_lag_source <- df0[[y_var]]
+  } else if (identical(y_lag_transform, "diff")) {
+    y_lag_source <- c(NA_real_, diff(df0[[y_var]]))
   } else {
-    stop("Unsupported y lag transform: ", LP_Y_LAG_TRANSFORM)
+    stop("Unsupported y_lag_transform: ", y_lag_transform)
   }
-  for (i in seq_len(n_lag_y)) out[[paste0("y_L", i)]] <- lag_vec(y_lag_source, i)
-  for (i in seq_len(n_lag_eps)) out[[paste0("eps_L", i)]] <- lag_vec(out[[shock]], i)
-  out$eps_plus <- pmax(out[[shock]], 0)
-  out$eps_minus <- pmin(out[[shock]], 0)
-  out$eps_sq <- out[[shock]]^2
-  out
+
+  for (L in seq_len(n_lag_y)) {
+    df0[[paste0("y_L", L)]] <- lag_vec(y_lag_source, L)
+  }
+
+  for (L in seq_len(n_lag_eps)) {
+    df0[[paste0("eps_L", L)]] <- lag_vec(df0[[shock_var]], L)
+  }
+
+  df0$eps_plus <- pmax(df0[[shock_var]], 0)
+  df0$eps_minus <- pmin(df0[[shock_var]], 0)
+  df0$eps_sq <- df0[[shock_var]]^2
+
+  df0
 }
 
-fit_ols_hac <- function(y, X, maxlags = NW_LAGS) {
+fit_ols_hac_white <- function(y, X, maxlags = 12L) {
   X <- as.data.frame(X)
   reg <- data.frame(lhs = y, X, check.names = FALSE)
   reg <- reg[stats::complete.cases(reg), ]
+
   y <- reg$lhs
   X <- as.matrix(reg[, setdiff(names(reg), "lhs"), drop = FALSE])
+
   fit <- lm.fit(X, y)
   beta <- fit$coefficients
   resid <- as.numeric(y - X %*% beta)
   n <- nrow(X)
+
   xtx_inv <- solve(crossprod(X))
   xu <- X * resid
   s_mat <- crossprod(xu)
+
   if (maxlags > 0L) {
-    for (lag in seq_len(maxlags)) {
-      weight <- 1 - lag / (maxlags + 1)
-      gamma <- crossprod(xu[(lag + 1L):n, , drop = FALSE], xu[1L:(n - lag), , drop = FALSE])
+    for (L in seq_len(maxlags)) {
+      weight <- 1 - L / (maxlags + 1)
+      gamma <- crossprod(
+        xu[(L + 1L):n, , drop = FALSE],
+        xu[1L:(n - L), , drop = FALSE]
+      )
       s_mat <- s_mat + weight * (gamma + t(gamma))
     }
   }
-  cov <- xtx_inv %*% s_mat %*% xtx_inv
-  colnames(cov) <- rownames(cov) <- colnames(X)
-  se <- sqrt(diag(cov))
+
+  vcov <- xtx_inv %*% s_mat %*% xtx_inv
+  colnames(vcov) <- rownames(vcov) <- colnames(X)
+  se <- sqrt(diag(vcov))
   names(se) <- colnames(X)
-  list(coef = beta, se = se, cov = cov, resid = resid, n = n)
+
+  list(coef = beta, se = se, vcov = vcov, resid = resid)
 }
 
-fit_ols_plain <- function(y, X) {
+fit_ols_plain_white <- function(y, X) {
   X <- as.data.frame(X)
   reg <- data.frame(lhs = y, X, check.names = FALSE)
   reg <- reg[stats::complete.cases(reg), ]
+
   y <- reg$lhs
   X <- as.matrix(reg[, setdiff(names(reg), "lhs"), drop = FALSE])
   fit <- lm.fit(X, y)
-  resid <- as.numeric(y - X %*% fit$coefficients)
-  list(coef = fit$coefficients, resid = resid)
-}
 
-irf_result <- function(horizons, coef, se, spec, outcome) {
-  list(horizons = as.integer(horizons), coef = as.numeric(coef), se = as.numeric(se), spec = spec, outcome = outcome)
-}
-
-estimate_irf_linear <- function(df, dep_level, shock, horizons, n_lag_y, n_lag_eps) {
-  base <- build_design(df, dep_level, shock, n_lag_y, n_lag_eps)
-  xcols <- c(control_cols(n_lag_y, n_lag_eps), shock)
-  coefs <- ses <- numeric(length(horizons))
-  for (j in seq_along(horizons)) {
-    h <- horizons[j]
-    lhs <- lead_vec(base[[dep_level]], h) - base[[dep_level]]
-    fit <- fit_ols_hac(lhs, base[, xcols, drop = FALSE])
-    coefs[j] <- fit$coef[[shock]]
-    ses[j] <- fit$se[[shock]]
-  }
-  irf_result(horizons, coefs, ses, "linear", dep_level)
-}
-
-estimate_irf_sign_both <- function(df, dep_level, shock, horizons, n_lag_y, n_lag_eps) {
-  base <- build_design(df, dep_level, shock, n_lag_y, n_lag_eps)
-  xcols <- c(control_cols(n_lag_y, n_lag_eps), "eps_plus", "eps_minus")
-  cp <- sp <- cm <- sm <- numeric(length(horizons))
-  for (j in seq_along(horizons)) {
-    h <- horizons[j]
-    lhs <- lead_vec(base[[dep_level]], h) - base[[dep_level]]
-    fit <- fit_ols_hac(lhs, base[, xcols, drop = FALSE])
-    cp[j] <- fit$coef[["eps_plus"]]
-    sp[j] <- fit$se[["eps_plus"]]
-    cm[j] <- fit$coef[["eps_minus"]]
-    sm[j] <- fit$se[["eps_minus"]]
-  }
   list(
-    plus = irf_result(horizons, cp, sp, "sign", paste0(dep_level, "|eps_plus")),
-    minus = irf_result(horizons, cm, sm, "sign", paste0(dep_level, "|eps_minus"))
+    coef = fit$coefficients,
+    resid = as.numeric(y - X %*% fit$coefficients)
   )
 }
 
-estimate_irf_quad <- function(df, dep_level, shock, horizons, n_lag_y, n_lag_eps) {
-  base <- build_design(df, dep_level, shock, n_lag_y, n_lag_eps)
-  xcols <- c(control_cols(n_lag_y, n_lag_eps), shock, "eps_sq")
-  c_pos <- s_pos <- c_neg <- s_neg <- numeric(length(horizons))
-  for (j in seq_along(horizons)) {
-    h <- horizons[j]
-    lhs <- lead_vec(base[[dep_level]], h) - base[[dep_level]]
-    fit <- fit_ols_hac(lhs, base[, xcols, drop = FALSE])
-    g1 <- fit$coef[[shock]]
-    g2 <- fit$coef[["eps_sq"]]
-    vc <- fit$cov[c(shock, "eps_sq"), c(shock, "eps_sq")]
-    j_pos <- c(1, 1)
-    j_neg <- c(-1, 1)
-    c_pos[j] <- g1 + g2
-    c_neg[j] <- -g1 + g2
-    s_pos[j] <- sqrt(drop(t(j_pos) %*% vc %*% j_pos))
-    s_neg[j] <- sqrt(drop(t(j_neg) %*% vc %*% j_neg))
-  }
-  list(
-    pos = irf_result(horizons, c_pos, s_pos, "quad", paste0(dep_level, "|+1pp")),
-    neg = irf_result(horizons, c_neg, s_neg, "quad", paste0(dep_level, "|-1pp"))
+LP_white <- function(data,
+                     H = 48L,
+                     y_var,
+                     shock_var = "eps",
+                     n_lags_y = 12L,
+                     n_lags_shock = 12L,
+                     nw_lags = 12L,
+                     scale = 1,
+                     confint = 1.645,
+                     y_lag_transform = "diff",
+                     include_time_trend = FALSE) {
+  df0 <- build_design_white(
+    data = data,
+    y_var = y_var,
+    shock_var = shock_var,
+    n_lag_y = n_lags_y,
+    n_lag_eps = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
   )
-}
 
-fev_share_linear <- function(df, dep_level, shock, horizons, n_lag_y, n_lag_eps) {
-  base <- build_design(df, dep_level, shock, n_lag_y, n_lag_eps)
-  xeps <- c(shock, paste0("eps_L", seq_len(n_lag_eps)))
-  control_base <- control_cols(n_lag_y, 0L)
-  rows <- vector("list", length(horizons))
-  for (j in seq_along(horizons)) {
-    h <- horizons[j]
-    lhs <- lead_vec(base[[dep_level]], h) - base[[dep_level]]
-    full <- fit_ols_plain(lhs, base[, c(control_base, xeps), drop = FALSE])
-    restricted <- fit_ols_plain(lhs, base[, control_base, drop = FALSE])
-    mse_full <- mean(full$resid^2)
-    mse_restricted <- mean(restricted$resid^2)
-    rows[[j]] <- data.frame(
-      horizon = h,
-      fev_share = if (mse_restricted > 0) 1 - mse_full / mse_restricted else NA_real_,
-      outcome = dep_level
+  horizons <- seq_len(H)
+  x_cols <- c(
+    control_cols_white(n_lags_y, n_lags_shock, include_time_trend),
+    shock_var
+  )
+
+  out <- vector("list", H)
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit <- fit_ols_hac_white(dy_h, df0[, x_cols, drop = FALSE], maxlags = nw_lags)
+
+    estimate <- unname(fit$coef[[shock_var]]) * scale
+    se <- unname(fit$se[[shock_var]]) * scale
+
+    out[[h_val]] <- data.frame(
+      outcome = y_var,
+      h = h_val,
+      estimate_raw = estimate,
+      se = se,
+      conf_low_raw = estimate - confint * se,
+      conf_high_raw = estimate + confint * se
     )
   }
-  do.call(rbind, rows)
+
+  do.call(rbind, out)
 }
 
-scale_irf <- function(res, scale) {
-  res$coef <- res$coef * scale
-  res$se <- res$se * scale
-  res
+LP_white_sign <- function(data,
+                          H = 48L,
+                          y_var,
+                          shock_var = "eps",
+                          n_lags_y = 12L,
+                          n_lags_shock = 12L,
+                          nw_lags = 12L,
+                          scale = 1,
+                          confint = 1.645,
+                          y_lag_transform = "diff",
+                          include_time_trend = FALSE) {
+  df0 <- build_design_white(
+    data = data,
+    y_var = y_var,
+    shock_var = shock_var,
+    n_lag_y = n_lags_y,
+    n_lag_eps = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
+  )
+
+  horizons <- seq_len(H)
+  shock_cols <- c("eps_plus", "eps_minus")
+  x_cols <- c(control_cols_white(n_lags_y, n_lags_shock, include_time_trend), shock_cols)
+  out <- list()
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit <- fit_ols_hac_white(dy_h, df0[, x_cols, drop = FALSE], maxlags = nw_lags)
+
+    for (s in shock_cols) {
+      estimate <- unname(fit$coef[[s]]) * scale
+      se <- unname(fit$se[[s]]) * scale
+      out[[length(out) + 1L]] <- data.frame(
+        outcome = y_var,
+        shock = s,
+        h = h_val,
+        estimate_raw = estimate,
+        se = se,
+        conf_low_raw = estimate - confint * se,
+        conf_high_raw = estimate + confint * se
+      )
+    }
+  }
+
+  do.call(rbind, out)
 }
 
-smooth_irf_result <- function(res, window = IRF_SMOOTH_WINDOW, se_floor_ratio = IRF_SMOOTH_SE_FLOOR_RATIO) {
-  if (window <= 1L) return(res)
+LP_white_quad <- function(data,
+                          H = 48L,
+                          y_var,
+                          shock_var = "eps",
+                          n_lags_y = 12L,
+                          n_lags_shock = 12L,
+                          nw_lags = 12L,
+                          scale = 1,
+                          confint = 1.645,
+                          y_lag_transform = "diff",
+                          include_time_trend = FALSE) {
+  df0 <- build_design_white(
+    data = data,
+    y_var = y_var,
+    shock_var = shock_var,
+    n_lag_y = n_lags_y,
+    n_lag_eps = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
+  )
+
+  horizons <- seq_len(H)
+  x_cols <- c(
+    control_cols_white(n_lags_y, n_lags_shock, include_time_trend),
+    shock_var,
+    "eps_sq"
+  )
+  out <- list()
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit <- fit_ols_hac_white(dy_h, df0[, x_cols, drop = FALSE], maxlags = nw_lags)
+
+    g1 <- unname(fit$coef[[shock_var]])
+    g2 <- unname(fit$coef[["eps_sq"]])
+    vc <- fit$vcov[c(shock_var, "eps_sq"), c(shock_var, "eps_sq")]
+
+    j_pos <- c(1, 1)
+    j_neg <- c(-1, 1)
+
+    estimates <- c("+1pp" = g1 + g2, "-1pp" = -g1 + g2) * scale
+    ses <- c(
+      "+1pp" = sqrt(drop(t(j_pos) %*% vc %*% j_pos)) * scale,
+      "-1pp" = sqrt(drop(t(j_neg) %*% vc %*% j_neg)) * scale
+    )
+
+    for (s in names(estimates)) {
+      out[[length(out) + 1L]] <- data.frame(
+        outcome = y_var,
+        shock = s,
+        h = h_val,
+        estimate_raw = unname(estimates[[s]]),
+        se = unname(ses[[s]]),
+        conf_low_raw = unname(estimates[[s]]) - confint * unname(ses[[s]]),
+        conf_high_raw = unname(estimates[[s]]) + confint * unname(ses[[s]])
+      )
+    }
+  }
+
+  do.call(rbind, out)
+}
+
+FEV_white <- function(data,
+                      H = 48L,
+                      y_var,
+                      shock_var = "eps",
+                      n_lags_y = 12L,
+                      n_lags_shock = 12L,
+                      y_lag_transform = "diff",
+                      include_time_trend = FALSE) {
+  df0 <- build_design_white(
+    data = data,
+    y_var = y_var,
+    shock_var = shock_var,
+    n_lag_y = n_lags_y,
+    n_lag_eps = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
+  )
+
+  horizons <- seq_len(H)
+  shock_lags <- paste0("eps_L", seq_len(n_lags_shock))
+  x_eps <- c(shock_var, shock_lags)
+  control_base <- control_cols_white(n_lags_y, 0L, include_time_trend)
+  out <- vector("list", H)
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit_full <- fit_ols_plain_white(dy_h, df0[, c(control_base, x_eps), drop = FALSE])
+    fit_restricted <- fit_ols_plain_white(dy_h, df0[, control_base, drop = FALSE])
+
+    mse_full <- mean(fit_full$resid^2)
+    mse_restricted <- mean(fit_restricted$resid^2)
+
+    out[[h_val]] <- data.frame(
+      horizon = h_val,
+      fev_share = if (mse_restricted > 0) 1 - mse_full / mse_restricted else NA_real_,
+      outcome = y_var
+    )
+  }
+
+  do.call(rbind, out)
+}
+
+
+# 3. IRF smoothing and output helpers ------------------------------------
+
+smooth_white_irf <- function(irf_df,
+                             window = 7L,
+                             se_floor_ratio = 0.85,
+                             confint = 1.645) {
+  if (window <= 1L) return(irf_df)
   if (window %% 2L == 0L) stop("IRF smoothing window must be odd.")
   if (se_floor_ratio < 0 || se_floor_ratio > 1) stop("SE floor ratio must lie between 0 and 1.")
 
+  out <- irf_df[order(irf_df$h), ]
   half <- window %/% 2L
-  n <- length(res$horizons)
-  coef_s <- numeric(n)
+  n <- nrow(out)
+  estimate_s <- numeric(n)
   se_s <- numeric(n)
+
   for (i in seq_len(n)) {
     lo <- max(1L, i - half)
     hi <- min(n, i + half)
     offsets <- abs(seq(lo, hi) - i)
     weights <- as.numeric(half + 1L - offsets)
     weights <- weights / sum(weights)
-    coef_s[i] <- sum(weights * res$coef[lo:hi])
-    independent_se <- sqrt(sum((weights * res$se[lo:hi])^2))
-    local_mean_se <- sum(weights * res$se[lo:hi])
+
+    estimate_s[i] <- sum(weights * out$estimate_raw[lo:hi])
+    independent_se <- sqrt(sum((weights * out$se[lo:hi])^2))
+    local_mean_se <- sum(weights * out$se[lo:hi])
     se_s[i] <- max(independent_se, se_floor_ratio * local_mean_se)
   }
-  out <- res
-  out$coef <- coef_s
+
+  out$estimate_raw <- estimate_s
   out$se <- se_s
+  out$conf_low_raw <- estimate_s - confint * se_s
+  out$conf_high_raw <- estimate_s + confint * se_s
   out
-}
-
-plot_irf <- function(res, out_path, title, ylabel) {
-  z <- 1.645
-  h <- c(0, res$horizons)
-  coef <- c(0, res$coef)
-  band <- c(0, z * res$se)
-  lo <- coef - band
-  hi <- coef + band
-  png(out_path, width = 1400, height = 800, res = 200)
-  par(family = "serif", mar = c(4.2, 4.5, 3.2, 1.2))
-  plot(h, coef, type = "n", xlab = "Months", ylab = ylabel, main = title, xlim = c(0, max(h)), ylim = range(lo, hi, finite = TRUE))
-  polygon(c(h, rev(h)), c(lo, rev(hi)), col = "grey85", border = NA)
-  lines(h, coef, col = "black", lwd = 2)
-  abline(h = 0, col = "grey30", lty = "dotted")
-  dev.off()
-}
-
-plot_figure3 <- function(irfs, out_path) {
-  panels <- list(
-    list(key = "log_routine", title = "Routine Employment", ylabel = "Percent", ylim = c(-3, 1)),
-    list(key = "log_nonroutine", title = "Nonroutine Employment", ylabel = "Percent", ylim = c(-3, 1)),
-    list(key = "routine_share", title = "Routine Share", ylabel = "% Points", ylim = c(-1, 0.5)),
-    list(key = "log_total", title = "Total Employment", ylabel = "Percent", ylim = c(-3, 1))
-  )
-  z <- 1.645
-  png(out_path, width = 1600, height = 1160, res = 200)
-  par(family = "serif", mfrow = c(2, 2), mar = c(4.2, 4.4, 3.2, 1.0))
-  for (panel in panels) {
-    res <- irfs[[panel$key]]
-    h <- c(0, res$horizons)
-    coef <- c(0, res$coef)
-    band <- c(0, z * res$se)
-    plot(h, coef, type = "n", xlab = "Months", ylab = panel$ylabel, main = panel$title, xlim = c(0, 48), ylim = panel$ylim, xaxt = "n")
-    polygon(c(h, rev(h)), c(coef - band, rev(coef + band)), col = "grey88", border = NA)
-    lines(h, coef, col = "black", lwd = 2)
-    abline(h = 0, col = "grey30", lty = "dotted")
-    axis(1, at = c(0, 12, 24, 36, 48))
-  }
-  dev.off()
-}
-
-plot_descriptive_line <- function(panel, column, ylabel, title, y_ticks, y_lim, out_path) {
-  png(out_path, width = 1300, height = 760, res = 200)
-  par(family = "serif", mar = c(4.2, 5.0, 3.0, 1.0))
-  plot(panel$date, panel[[column]], type = "n", xlab = "Year", ylab = ylabel, main = title, ylim = y_lim, yaxt = "n")
-  usr <- par("usr")
-  for (i in seq_len(nrow(RECESSIONS))) {
-    rect(RECESSIONS$start[i], usr[3], RECESSIONS$end[i], usr[4], col = "grey85", border = NA)
-  }
-  lines(panel$date, panel[[column]], col = "black", lwd = 1.4)
-  axis(2, at = y_ticks)
-  box()
-  dev.off()
 }
 
 write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
   rows <- list()
-  for (outcome in names(raw_irfs)) {
-    raw <- raw_irfs[[outcome]]
-    plotted <- plotted_irfs[[outcome]]
-    rows[[outcome]] <- data.frame(
-      outcome = outcome,
-      horizon = raw$horizons,
-      coef_raw = raw$coef,
+
+  for (nm in names(raw_irfs)) {
+    raw <- raw_irfs[[nm]][order(raw_irfs[[nm]]$h), ]
+    plotted <- plotted_irfs[[nm]][order(plotted_irfs[[nm]]$h), ]
+
+    rows[[nm]] <- data.frame(
+      outcome = nm,
+      horizon = raw$h,
+      coef_raw = raw$estimate_raw,
       se_raw = raw$se,
-      coef_plotted = plotted$coef,
+      coef_plotted = plotted$estimate_raw,
       se_plotted = plotted$se
     )
   }
+
   out <- do.call(rbind, rows)
   row.names(out) <- NULL
   write.csv(out, out_path, row.names = FALSE)
@@ -520,34 +387,141 @@ write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
 
 write_fev_csv <- function(fev_rows, out_path) {
   fev <- do.call(rbind, fev_rows)
-  fev <- fev[, c("horizon", "fev_share", "outcome")]
   wide <- reshape(fev, idvar = "horizon", timevar = "outcome", direction = "wide")
   names(wide) <- sub("^fev_share\\.", "", names(wide))
+
   python_order <- c("horizon", "log_nonroutine", "log_routine", "log_total", "routine_share")
   if (all(python_order %in% names(wide))) {
     wide <- wide[, python_order]
   }
+
   wide <- wide[order(wide$horizon), ]
   write.csv(wide, out_path, row.names = FALSE)
   invisible(wide)
 }
 
-validate_against_python_reference <- function(r_irfs) {
-  ref_path <- file.path(REFERENCE_DIR, "python_figure3_linear_irfs_raw_and_smoothed.csv")
+
+# 4. Plotting -------------------------------------------------------------
+
+plot_irf_white <- function(irf_df, out_path, title, ylabel) {
+  z <- 1.645
+  irf_df <- irf_df[order(irf_df$h), ]
+  h <- c(0, irf_df$h)
+  estimate <- c(0, irf_df$estimate_raw)
+  band <- c(0, z * irf_df$se)
+  lo <- estimate - band
+  hi <- estimate + band
+
+  png(out_path, width = 1400, height = 800, res = 200)
+  par(family = "serif", mar = c(4.2, 4.5, 3.2, 1.2))
+  plot(
+    h, estimate,
+    type = "n",
+    xlab = "Months",
+    ylab = ylabel,
+    main = title,
+    xlim = c(0, max(h)),
+    ylim = range(lo, hi, finite = TRUE)
+  )
+  polygon(c(h, rev(h)), c(lo, rev(hi)), col = "grey85", border = NA)
+  lines(h, estimate, col = "black", lwd = 2)
+  abline(h = 0, col = "grey30", lty = "dotted")
+  dev.off()
+}
+
+plot_figure3_white <- function(irf_list, out_path) {
+  panels <- list(
+    list(key = "log_routine", title = "Routine Employment", ylabel = "Percent", ylim = c(-3, 1)),
+    list(key = "log_nonroutine", title = "Nonroutine Employment", ylabel = "Percent", ylim = c(-3, 1)),
+    list(key = "routine_share", title = "Routine Share", ylabel = "% Points", ylim = c(-1, 0.5)),
+    list(key = "log_total", title = "Total Employment", ylabel = "Percent", ylim = c(-3, 1))
+  )
+
+  z <- 1.645
+  png(out_path, width = 1600, height = 1160, res = 200)
+  par(family = "serif", mfrow = c(2, 2), mar = c(4.2, 4.4, 3.2, 1.0))
+
+  for (p in panels) {
+    irf_df <- irf_list[[p$key]][order(irf_list[[p$key]]$h), ]
+    h <- c(0, irf_df$h)
+    estimate <- c(0, irf_df$estimate_raw)
+    band <- c(0, z * irf_df$se)
+
+    plot(
+      h, estimate,
+      type = "n",
+      xlab = "Months",
+      ylab = p$ylabel,
+      main = p$title,
+      xlim = c(0, 48),
+      ylim = p$ylim,
+      xaxt = "n"
+    )
+    polygon(c(h, rev(h)), c(estimate - band, rev(estimate + band)), col = "grey88", border = NA)
+    lines(h, estimate, col = "black", lwd = 2)
+    abline(h = 0, col = "grey30", lty = "dotted")
+    axis(1, at = c(0, 12, 24, 36, 48))
+  }
+
+  dev.off()
+}
+
+plot_descriptive_line <- function(panel,
+                                  column,
+                                  ylabel,
+                                  title,
+                                  y_ticks,
+                                  y_lim,
+                                  out_path,
+                                  recessions) {
+  png(out_path, width = 1300, height = 760, res = 200)
+  par(family = "serif", mar = c(4.2, 5.0, 3.0, 1.0))
+  plot(
+    panel$date,
+    panel[[column]],
+    type = "n",
+    xlab = "Year",
+    ylab = ylabel,
+    main = title,
+    ylim = y_lim,
+    yaxt = "n"
+  )
+  usr <- par("usr")
+  for (i in seq_len(nrow(recessions))) {
+    rect(recessions$start[i], usr[3], recessions$end[i], usr[4], col = "grey85", border = NA)
+  }
+  lines(panel$date, panel[[column]], col = "black", lwd = 1.4)
+  axis(2, at = y_ticks)
+  box()
+  dev.off()
+}
+
+
+# 5. Validation -----------------------------------------------------------
+
+validate_against_python <- function(r_irfs,
+                                    reference_dir,
+                                    output_dir) {
+  ref_path <- file.path(reference_dir, "python_figure3_linear_irfs_raw_and_smoothed.csv")
   if (!file.exists(ref_path)) return(invisible(NULL))
-  ref <- read_csv_base(ref_path)
+
+  ref <- read_white_csv(ref_path)
   ref$horizon <- as.integer(ref$horizon)
+
   merged <- merge(
     r_irfs[, c("outcome", "horizon", "coef_raw", "se_raw", "coef_plotted", "se_plotted")],
     ref,
     by = c("outcome", "horizon"),
     suffixes = c("_r", "_python")
   )
+
   merged$coef_abs_diff <- abs(merged$coef_raw_r - as.numeric(merged$coef_raw_python))
   merged$se_abs_diff <- abs(merged$se_raw_r - as.numeric(merged$se_raw_python))
   merged$coef_plotted_abs_diff <- abs(merged$coef_plotted_r - as.numeric(merged$coef_plotted_python))
   merged$se_plotted_abs_diff <- abs(merged$se_plotted_r - as.numeric(merged$se_plotted_python))
-  write.csv(merged, file.path(OUTPUT_DIR, "validation_against_python.csv"), row.names = FALSE)
+
+  write.csv(merged, file.path(output_dir, "validation_against_python.csv"), row.names = FALSE)
+
   message(
     "Validation against Python reference: max raw coef diff = ",
     signif(max(merged$coef_abs_diff, na.rm = TRUE), 6),
@@ -558,5 +532,6 @@ validate_against_python_reference <- function(r_irfs) {
     ", max plotted SE diff = ",
     signif(max(merged$se_plotted_abs_diff, na.rm = TRUE), 6)
   )
+
   invisible(merged)
 }

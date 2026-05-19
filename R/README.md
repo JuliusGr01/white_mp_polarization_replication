@@ -1,31 +1,32 @@
 # R Replication of the White-Style Pipeline
 
-This folder is a self-contained R port of the current Python pipeline. It uses
-the materialized Python panels copied into `reference/` as canonical inputs so
-the R estimates match the Python replication exactly up to floating-point
-precision.
+This folder is a self-contained R port of the current Python pipeline, written
+in the same script-driven style as the `final/` folder of the thesis project.
+`main.R` does setup and sourcing, `2_LP.R` contains the empirical workflow, and
+`functions.R` only contains reusable helper functions.
 
 Run from this directory:
 
 ```r
-source("run_all.R")
+source("main.R")
 ```
 
 or from a shell with R on `PATH`:
 
 ```powershell
-Rscript run_all.R
+Rscript main.R
 ```
 
-The script uses only base R, `stats`, and base graphics.
+`run_all.R` is kept as a compatibility wrapper and simply sources `main.R`.
+The scripts use only base R, `stats`, and base graphics.
 
 ## What It Does
 
 1. Uses the Python materialized Figure 1/2 and LP panels from `reference/` by
    default. This avoids algorithmic drift between statsmodels STL and base R
    STL and is what makes the R and Python results numerically identical.
-2. The raw input files are also copied under `data/`, so the R code can rebuild
-   the panels if `USE_PYTHON_PIPELINE_PANELS <- FALSE` in `config.R`:
+2. The raw input files are also copied under `data/` for inspection and future
+   extensions:
    - `data/cps_ee_1969_1982_employment_monthly.csv`
    - `data/bls_occ_employed_monthly.csv`
 3. Loads the Romer-Romer meeting-level shocks from
