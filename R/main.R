@@ -10,10 +10,7 @@
 
 # 0. Set-up ---------------------------------------------------------------
 
-setwd("C:/Users/wmf098/Desktop/white_mp_polarization_replication/white_mp_polarization_replication")
-
-repo_dir <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
-r_dir <- file.path(repo_dir, "R")
+setwd("C:/Users/wmf098/Desktop/white_mp_polarization_replication/white_mp_polarization_replication/R")
 
 # 0.1 Load libraries -------------------------------------------------------
 
@@ -79,21 +76,18 @@ libs <- c(
   "Hmisc"
 )
 
-# Load each library quietly. Set WHITE_R_SKIP_PACKAGE_LOAD=1 when checking the
-# reproducible pipeline on a clean machine without installing the full toolbox.
-if (Sys.getenv("WHITE_R_SKIP_PACKAGE_LOAD", "0") != "1") {
-  invisible(lapply(libs, function(pkg) {
-    if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
-    suppressPackageStartupMessages(library(pkg, character.only = TRUE))
-  }))
-}
+# Load each library quietly
+invisible(lapply(libs, function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
+  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+}))
 
 
 # 0.2 Paths ---------------------------------------------------------------
 
-input_dir <- file.path(r_dir, "data")
-ref_dir <- file.path(r_dir, "reference")
-out_dir <- file.path(r_dir, "output")
+input_dir <- file.path("data")
+ref_dir <- file.path("reference")
+out_dir <- file.path("output")
 fig_dir <- out_dir
 tab_dir <- out_dir
 cache_dir <- file.path(out_dir, "cache")
@@ -105,14 +99,14 @@ dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
 # 0.3 Helper functions ----------------------------------------------------
 
-source(file.path(r_dir, "functions.R"))
+source("functions.R")
 
 
 # 1. Data build -----------------------------------------------------------
 
-source(file.path(r_dir, "1_Data.R"))
+source("1_Data.R")
 
 
 # 2. White (2022) replication --------------------------------------------
 
-source(file.path(r_dir, "2_LP.R"))
+## source("2_LP.R")

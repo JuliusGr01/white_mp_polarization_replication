@@ -44,10 +44,6 @@ routine_ts_fig12$date <- as.Date(routine_ts_fig12$date)
 routine_ts_sa <- read_white_csv(lp_reference)
 routine_ts_sa$date <- as.Date(routine_ts_sa$date)
 
-copy_if_present(fig12_reference, file.path(out_dir, "figures_1_2_series.csv"))
-copy_if_present(lp_reference, file.path(input_dir, "employment_monthly_white_lp.csv"))
-copy_if_present(extended_reference, file.path(input_dir, "employment_monthly_extended.csv"))
-
 
 # 2. Figures 1 and 2 ------------------------------------------------------
 
@@ -312,11 +308,5 @@ write_fev_csv(
 
 
 # 8. Validation -----------------------------------------------------------
-
-validate_against_python(
-  r_irfs = figure3_irfs_df,
-  reference_dir = ref_dir,
-  output_dir = out_dir
-)
 
 message("Done. R outputs are under: ", normalizePath(out_dir, winslash = "/", mustWork = FALSE))

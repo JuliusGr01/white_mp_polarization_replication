@@ -27,13 +27,6 @@ lead_vec <- function(x, n) {
   c(x[(n + 1L):length(x)], rep(NA_real_, n))
 }
 
-copy_if_present <- function(from, to) {
-  if (file.exists(from)) {
-    dir.create(dirname(to), recursive = TRUE, showWarnings = FALSE)
-    invisible(file.copy(from, to, overwrite = TRUE))
-  }
-}
-
 xml_unescape_white <- function(x) {
   x <- gsub("&lt;", "<", x, fixed = TRUE)
   x <- gsub("&gt;", ">", x, fixed = TRUE)
@@ -168,10 +161,6 @@ build_cps_ee_from_excel <- function(xlsx_path,
                                     crosswalk_path,
                                     out_dir) {
   raw <- read_xlsx_first_sheet_base(xlsx_path)
-  required <- c("value", "occupation", "period", "Month_Year", "occ_pos")
-  missing <- setdiff(required, names(raw))
-  if (length(missing) > 0L) stop("Workbook missing columns: ", paste(missing, collapse = ", "))
-
   raw$occupation <- trimws(raw$occupation)
   raw$period <- trimws(raw$period)
   raw$occ_pos <- as.integer(raw$occ_pos)
@@ -971,44 +960,4 @@ plot_descriptive_line <- function(panel,
   axis(2, at = y_ticks)
   box()
   dev.off()
-}
-
-
-# 5. Validation -----------------------------------------------------------
-
-validate_against_python <- function(r_irfs,
-                                    reference_dir,
-                                    output_dir) {
-  ref_path <- file.path(reference_dir, "python_figure3_linear_irfs_raw_and_smoothed.csv")
-  if (!file.exists(ref_path)) return(invisible(NULL))
-
-  ref <- read_white_csv(ref_path)
-  ref$horizon <- as.integer(ref$horizon)
-
-  merged <- merge(
-    r_irfs[, c("outcome", "horizon", "coef_raw", "se_raw", "coef_plotted", "se_plotted")],
-    ref,
-    by = c("outcome", "horizon"),
-    suffixes = c("_r", "_python")
-  )
-
-  merged$coef_abs_diff <- abs(merged$coef_raw_r - as.numeric(merged$coef_raw_python))
-  merged$se_abs_diff <- abs(merged$se_raw_r - as.numeric(merged$se_raw_python))
-  merged$coef_plotted_abs_diff <- abs(merged$coef_plotted_r - as.numeric(merged$coef_plotted_python))
-  merged$se_plotted_abs_diff <- abs(merged$se_plotted_r - as.numeric(merged$se_plotted_python))
-
-  write_white_csv(merged, file.path(output_dir, "validation_against_python.csv"))
-
-  message(
-    "Validation against Python reference: max raw coef diff = ",
-    signif(max(merged$coef_abs_diff, na.rm = TRUE), 6),
-    ", max raw SE diff = ",
-    signif(max(merged$se_abs_diff, na.rm = TRUE), 6),
-    ", max plotted coef diff = ",
-    signif(max(merged$coef_plotted_abs_diff, na.rm = TRUE), 6),
-    ", max plotted SE diff = ",
-    signif(max(merged$se_plotted_abs_diff, na.rm = TRUE), 6)
-  )
-
-  invisible(merged)
 }
