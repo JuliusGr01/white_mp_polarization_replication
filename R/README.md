@@ -40,10 +40,8 @@ The scripts use only base R, `stats`, and base graphics.
    - 12 lags of monthly outcome changes
    - 12 lags of monetary shocks
    - Newey-West HAC standard errors with 12 lags
-6. Applies the same Figure 3 display smoother as the Python pipeline and also
-   writes unsmoothed diagnostic outputs.
-7. Writes Figures 1-3, all individual IRF plots, FEV shares, the LP panel, and
-   a Python-reference validation file.
+6. Writes Figure 3 directly from the raw local-projection estimates.
+7. Writes Figures 1-3, all individual IRF plots, FEV shares, and the LP panel.
 
 The data-build diagnostics are written to:
 
@@ -54,23 +52,17 @@ output/data_build/
 ## Important Difference From the Latest Python Plot
 
 The current Python `output/figure3_linear_occupations.png` includes a display
-smoother. The R port writes both the smoothed Python-style output and the raw
-unsmoothed diagnostic output:
+smoother. The R port intentionally does not smooth Figure 3 and writes only the
+raw local-projection output:
 
 - `output/figure3_linear_occupations.png`
 - `output/figure3_linear_irfs.csv`
-- `output/figure3_linear_occupations_unsmoothed.png`
-- `output/figure3_linear_irfs_unsmoothed.csv`
 
 ## Reference Files
 
 The `reference/` folder contains copied Python outputs from the previous step.
-The R pipeline compares its raw and plotted Figure 3 IRFs against that reference
-and writes:
-
-```text
-output/validation_against_python.csv
-```
+The reference files are retained for comparison with the Python pipeline. The
+current R scripts write raw, unsmoothed Figure 3 IRFs.
 
 No original Python input files were removed; they were copied here so this R
 folder can be run independently without breaking the existing Python workflow.

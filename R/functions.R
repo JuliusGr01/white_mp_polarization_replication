@@ -396,9 +396,11 @@ load_rr_shocks_white <- function(path) {
 
 load_jk_shocks_white <- function(path,
                                  mp_col = "MP_pm",
-                                 cbi_col = "CBI_pm") {
+                                 cbi_col = "CBI_pm",
+                                 pc1_col = NULL) {
   raw <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
   required <- c("year", "month", mp_col, cbi_col)
+  if (!is.null(pc1_col)) required <- c(required, pc1_col)
   missing <- setdiff(required, names(raw))
   if (length(missing) > 0L) stop("JK shock file missing columns: ", paste(missing, collapse = ", "))
 
@@ -411,13 +413,15 @@ load_jk_shocks_white <- function(path,
     MP = parse_num(raw[[mp_col]]),
     CBI = parse_num(raw[[cbi_col]])
   )
+  if (!is.null(pc1_col)) out[[pc1_col]] <- parse_num(raw[[pc1_col]])
+
   out <- out[!is.na(out$date), ]
-  out <- aggregate(cbind(MP, CBI) ~ date, out, sum, na.rm = TRUE)
+  value_cols <- setdiff(names(out), "date")
+  out <- aggregate(out[value_cols], by = list(date = out$date), sum, na.rm = TRUE)
 
   full <- data.frame(date = seq(min(out$date), max(out$date), by = "month"))
   out <- merge(full, out, by = "date", all.x = TRUE)
-  out$MP[is.na(out$MP)] <- 0
-  out$CBI[is.na(out$CBI)] <- 0
+  for (col in value_cols) out[[col]][is.na(out[[col]])] <- 0
   out[order(out$date), ]
 }
 
@@ -799,6 +803,49 @@ LP_white_multi_shock <- function(data,
   do.call(rbind, out)
 }
 
+LP_white_shock_comparison <- function(data,
+                                      H = 48L,
+                                      y_var,
+                                      shock_vars,
+                                      shock_labels = NULL,
+                                      n_lags_y = 12L,
+                                      n_lags_shock = 12L,
+                                      nw_lags = 12L,
+                                      scale = 1,
+                                      confint = 1.645,
+                                      y_lag_transform = "diff",
+                                      include_time_trend = FALSE) {
+  if (is.null(shock_labels)) shock_labels <- shock_vars
+  if (is.null(names(shock_labels))) names(shock_labels) <- shock_vars
+
+  pieces <- lapply(shock_vars, function(shock_var) {
+    irf <- LP_white(
+      data = data,
+      H = H,
+      y_var = y_var,
+      shock_var = shock_var,
+      n_lags_y = n_lags_y,
+      n_lags_shock = n_lags_shock,
+      nw_lags = nw_lags,
+      scale = scale,
+      confint = confint,
+      y_lag_transform = y_lag_transform,
+      include_time_trend = include_time_trend
+    )
+
+    irf$shock <- shock_var
+    irf$shock_label <- unname(shock_labels[[shock_var]])
+    irf[, c(
+      "outcome", "shock", "shock_label", "h",
+      "estimate_raw", "se", "conf_low_raw", "conf_high_raw"
+    )]
+  })
+
+  out <- do.call(rbind, pieces)
+  row.names(out) <- NULL
+  out
+}
+
 LP_white_sign <- function(data,
                           H = 48L,
                           y_var,
@@ -952,75 +999,21 @@ FEV_white <- function(data,
 }
 
 
-# 3. IRF smoothing and output helpers ------------------------------------
+# 3. IRF output helpers ---------------------------------------------------
 
-smooth_white_irf <- function(irf_df,
-                             window = 7L,
-                             se_floor_ratio = 0.85,
-                             confint = 1.645) {
-  if (window <= 1L) return(irf_df)
-  if (window %% 2L == 0L) stop("IRF smoothing window must be odd.")
-  if (se_floor_ratio < 0 || se_floor_ratio > 1) stop("SE floor ratio must lie between 0 and 1.")
-
-  out <- irf_df[order(irf_df$h), ]
-  half <- window %/% 2L
-  n <- nrow(out)
-  estimate_s <- numeric(n)
-  se_s <- numeric(n)
-
-  for (i in seq_len(n)) {
-    lo <- max(1L, i - half)
-    hi <- min(n, i + half)
-    offsets <- abs(seq(lo, hi) - i)
-    weights <- as.numeric(half + 1L - offsets)
-    weights <- weights / sum(weights)
-
-    estimate_s[i] <- sum(weights * out$estimate_raw[lo:hi])
-    independent_se <- sqrt(sum((weights * out$se[lo:hi])^2))
-    local_mean_se <- sum(weights * out$se[lo:hi])
-    se_s[i] <- max(independent_se, se_floor_ratio * local_mean_se)
-  }
-
-  out$estimate_raw <- estimate_s
-  out$se <- se_s
-  out$conf_low_raw <- estimate_s - confint * se_s
-  out$conf_high_raw <- estimate_s + confint * se_s
-  out
-}
-
-smooth_white_irf_by_shock <- function(irf_df,
-                                      window = 7L,
-                                      se_floor_ratio = 0.85,
-                                      confint = 1.645) {
-  if (!"shock" %in% names(irf_df)) {
-    return(smooth_white_irf(irf_df, window = window, se_floor_ratio = se_floor_ratio, confint = confint))
-  }
-
-  shock_levels <- unique(irf_df$shock)
-  pieces <- split(irf_df, factor(irf_df$shock, levels = shock_levels))
-  out <- do.call(rbind, lapply(pieces, smooth_white_irf,
-    window = window,
-    se_floor_ratio = se_floor_ratio,
-    confint = confint
-  ))
-  row.names(out) <- NULL
-  out[order(match(out$shock, shock_levels), out$h), ]
-}
-
-write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
+write_figure3_irf_csv <- function(irfs, out_path) {
   rows <- list()
 
-  for (nm in names(raw_irfs)) {
-    raw <- raw_irfs[[nm]][order(raw_irfs[[nm]]$h), ]
-    plotted <- plotted_irfs[[nm]][order(plotted_irfs[[nm]]$h), ]
+  for (nm in names(irfs)) {
+    irf <- irfs[[nm]][order(irfs[[nm]]$h), ]
 
     rows[[nm]] <- data.frame(
       outcome = nm,
-      horizon = raw$h,
-      coef_raw = raw$estimate_raw,
-      se_raw = raw$se,
-      coef_plotted = plotted$estimate_raw,
-      se_plotted = plotted$se
+      horizon = irf$h,
+      estimate = irf$estimate_raw,
+      se = irf$se,
+      conf_low = irf$conf_low_raw,
+      conf_high = irf$conf_high_raw
     )
   }
 
@@ -1030,34 +1023,31 @@ write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
   out
 }
 
-write_figure3_multi_shock_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
+write_figure3_multi_shock_irf_csv <- function(irfs, out_path) {
   rows <- list()
 
-  for (nm in names(raw_irfs)) {
-    raw <- raw_irfs[[nm]]
-    plotted <- plotted_irfs[[nm]]
-    shock_levels <- unique(raw$shock)
+  for (nm in names(irfs)) {
+    irf <- irfs[[nm]]
+    shock_levels <- unique(irf$shock)
 
     for (shock in shock_levels) {
-      raw_s <- raw[raw$shock == shock, ]
-      raw_s <- raw_s[order(raw_s$h), ]
-      plotted_s <- plotted[plotted$shock == shock, ]
-      plotted_s <- plotted_s[order(plotted_s$h), ]
+      irf_s <- irf[irf$shock == shock, ]
+      irf_s <- irf_s[order(irf_s$h), ]
 
       label <- shock
-      if ("shock_label" %in% names(raw_s) && nrow(raw_s) > 0L) {
-        label <- raw_s$shock_label[[1]]
+      if ("shock_label" %in% names(irf_s) && nrow(irf_s) > 0L) {
+        label <- irf_s$shock_label[[1]]
       }
 
       rows[[paste(nm, shock, sep = "_")]] <- data.frame(
         outcome = nm,
         shock = shock,
         shock_label = label,
-        horizon = raw_s$h,
-        coef_raw = raw_s$estimate_raw,
-        se_raw = raw_s$se,
-        coef_plotted = plotted_s$estimate_raw,
-        se_plotted = plotted_s$se
+        horizon = irf_s$h,
+        estimate = irf_s$estimate_raw,
+        se = irf_s$se,
+        conf_low = irf_s$conf_low_raw,
+        conf_high = irf_s$conf_high_raw
       )
     }
   }
@@ -1153,7 +1143,8 @@ plot_figure3_multi_shock_white <- function(irf_list,
                                            out_path,
                                            shock_labels = c(MP = "MP", CBI = "CBI"),
                                            shock_colors = c(MP = "black", CBI = "firebrick3"),
-                                           shock_ltys = c(MP = 1, CBI = 2)) {
+                                           shock_ltys = c(MP = 1, CBI = 2),
+                                           legend_position = "topleft") {
   panels <- list(
     list(key = "log_routine", title = "Routine Employment", ylabel = "Percent", ylim = c(-3, 1)),
     list(key = "log_nonroutine", title = "Nonroutine Employment", ylabel = "Percent", ylim = c(-3, 1)),
@@ -1206,7 +1197,7 @@ plot_figure3_multi_shock_white <- function(irf_list,
 
     if (i == 1L) {
       legend(
-        "topleft",
+        legend_position,
         legend = unname(shock_labels[shock_order]),
         col = unname(shock_colors[shock_order]),
         lty = unname(shock_ltys[shock_order]),

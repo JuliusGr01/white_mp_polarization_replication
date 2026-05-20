@@ -18,11 +18,6 @@ confint <- 1.645
 y_lag_transform <- "diff"
 include_time_trend <- FALSE
 
-smooth_figure3 <- TRUE
-irf_smooth_window <- 7L
-irf_smooth_se_floor_ratio <- 0.85
-
-
 recessions <- data.frame(
   start = as.Date(c(
     "1969-12-01", "1973-11-01", "1980-01-01", "1981-07-01",
@@ -261,37 +256,13 @@ figure3_irfs_raw <- list(
   routine_share = irf_routine_share
 )
 
-if (smooth_figure3) {
-  figure3_irfs <- lapply(
-    figure3_irfs_raw,
-    smooth_white_irf,
-    window = irf_smooth_window,
-    se_floor_ratio = irf_smooth_se_floor_ratio,
-    confint = confint
-  )
-} else {
-  figure3_irfs <- figure3_irfs_raw
-}
-
 plot_figure3_white(
   irf_list = figure3_irfs_raw,
-  out_path = file.path(fig_dir, "figure3_linear_occupations_unsmoothed.png")
-)
-
-plot_figure3_white(
-  irf_list = figure3_irfs,
   out_path = file.path(fig_dir, "figure3_linear_occupations.png")
 )
 
-figure3_irfs_unsmoothed <- write_figure3_irf_csv(
-  raw_irfs = figure3_irfs_raw,
-  plotted_irfs = figure3_irfs_raw,
-  out_path = file.path(tab_dir, "figure3_linear_irfs_unsmoothed.csv")
-)
-
 figure3_irfs_df <- write_figure3_irf_csv(
-  raw_irfs = figure3_irfs_raw,
-  plotted_irfs = figure3_irfs,
+  irfs = figure3_irfs_raw,
   out_path = file.path(tab_dir, "figure3_linear_irfs.csv")
 )
 
