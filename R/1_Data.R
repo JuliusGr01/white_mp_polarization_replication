@@ -11,11 +11,21 @@
 # 0. Control panel --------------------------------------------------------
 
 get_data_script_dir <- function() {
-  sourced_file <- tryCatch(
-    normalizePath(sys.frames()[[1]]$ofile, winslash = "/", mustWork = TRUE),
-    error = function(e) NA_character_
+  sourced_files <- vapply(
+    sys.frames(),
+    function(frame) {
+      if (!is.null(frame$ofile)) {
+        return(frame$ofile)
+      }
+      NA_character_
+    },
+    character(1)
   )
-  if (!is.na(sourced_file)) return(dirname(sourced_file))
+  sourced_files <- sourced_files[!is.na(sourced_files)]
+  if (length(sourced_files) > 0L) {
+    sourced_file <- normalizePath(tail(sourced_files, 1L), winslash = "/", mustWork = TRUE)
+    return(dirname(sourced_file))
+  }
 
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- "--file="
@@ -27,7 +37,16 @@ get_data_script_dir <- function() {
   normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 }
 
-setwd(get_data_script_dir())
+project_path <- function(path, root) {
+  path <- as.character(path)
+  if (grepl("^([A-Za-z]:|/|\\\\\\\\)", path)) {
+    return(path)
+  }
+  file.path(root, path)
+}
+
+data_script_dir <- get_data_script_dir()
+if (!exists("r_dir")) r_dir <- data_script_dir
 
 if (!exists("input_dir")) input_dir <- file.path("data")
 if (!exists("ref_dir")) ref_dir <- file.path("reference")
@@ -35,7 +54,15 @@ if (!exists("out_dir")) out_dir <- file.path("output")
 if (!exists("cache_dir")) cache_dir <- file.path(out_dir, "cache")
 if (!exists("fig_dir")) fig_dir <- out_dir
 if (!exists("tab_dir")) tab_dir <- out_dir
-if (!exists("read_white_csv")) source("functions.R")
+
+input_dir <- project_path(input_dir, r_dir)
+ref_dir <- project_path(ref_dir, r_dir)
+out_dir <- project_path(out_dir, r_dir)
+cache_dir <- project_path(cache_dir, r_dir)
+fig_dir <- project_path(fig_dir, r_dir)
+tab_dir <- project_path(tab_dir, r_dir)
+
+if (!exists("read_white_csv")) source(file.path(r_dir, "functions.R"))
 
 build_dir <- file.path(out_dir, "data_build")
 dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
