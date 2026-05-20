@@ -1,6 +1,11 @@
 #######################################################
-###             Reaction with JK shocks             ###
+###      Figure 3 with Jarocinski-Karadi Shocks     ###
 #######################################################
+
+# This script mirrors the Figure 3 exercise in 2_LP.R, but replaces the
+# prolonged Romer-Romer shock with the Jarocinski-Karadi monthly decomposition.
+# MP and CBI are estimated jointly in each LP, with lags of both components.
+
 
 # 0. Control panel --------------------------------------------------------
 
@@ -11,72 +16,72 @@ nw_lags <- 12L
 confint <- 1.645
 
 y_lag_transform <- "diff"
-include_time_trend <- TRUE
+include_time_trend <- FALSE
 
-recessions <- data.frame(
-  start = as.Date(c(
-    "1969-12-01", "1973-11-01", "1980-01-01", "1981-07-01",
-    "1990-07-01", "2001-03-01", "2007-12-01", "2020-02-01"
-  )),
-  end = as.Date(c(
-    "1970-11-01", "1975-03-01", "1980-07-01", "1982-11-01",
-    "1991-03-01", "2001-11-01", "2009-06-01", "2020-04-01"
-  ))
-)
+smooth_figure3 <- TRUE
+irf_smooth_window <- 7L
+irf_smooth_se_floor_ratio <- 0.85
+
+jk_shock_vars <- c("MP", "CBI")
+jk_shock_labels <- c(MP = "MP", CBI = "CBI")
+
+if (!exists("input_dir")) input_dir <- file.path("data")
+if (!exists("ref_dir")) ref_dir <- file.path("reference")
+if (!exists("out_dir")) out_dir <- file.path("output")
+if (!exists("fig_dir")) fig_dir <- out_dir
+if (!exists("tab_dir")) tab_dir <- out_dir
+
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(tab_dir, recursive = TRUE, showWarnings = FALSE)
+
+if (!exists("read_white_csv")) source("functions.R")
 
 
 # 1. Data import ----------------------------------------------------------
 
-# The Python pipeline already materializes the exact seasonal-adjusted panels.
-# We use those as the canonical inputs here, because base R STL and statsmodels
-# STL are not identical at machine precision.
-
-fig12_reference <- file.path(ref_dir, "python_figures_1_2_series.csv")
+lp_panel_file <- file.path(input_dir, "employment_monthly_white_lp.csv")
 lp_reference <- file.path(ref_dir, "python_employment_monthly_white_lp.csv")
-extended_reference <- file.path(ref_dir, "python_employment_monthly_extended.csv")
+jk_shock_file <- file.path(input_dir, "shocks_fed_jk_m.csv")
 
-if (!file.exists(fig12_reference)) stop("Missing reference file: ", fig12_reference)
-if (!file.exists(lp_reference)) stop("Missing reference file: ", lp_reference)
+if (!file.exists(lp_panel_file) && !file.exists(lp_reference)) {
+  stop("Missing LP panel. Run 1_Data.R or provide reference file: ", lp_reference)
+}
+if (!file.exists(jk_shock_file)) stop("Missing JK shock file: ", jk_shock_file)
 
-routine_ts_fig12 <- read_white_csv(fig12_reference)
-routine_ts_fig12$date <- as.Date(routine_ts_fig12$date)
-
-routine_ts_sa <- read_white_csv(lp_reference)
+if (file.exists(lp_panel_file)) {
+  routine_ts_sa <- read_white_csv(lp_panel_file)
+} else {
+  routine_ts_sa <- read_white_csv(lp_reference)
+}
 routine_ts_sa$date <- as.Date(routine_ts_sa$date)
 
-
-# 2. Figures 1 and 2 ------------------------------------------------------
-
-plot_descriptive_line(
-  panel = routine_ts_fig12,
-  column = "routine_emp_per_capita_sa",
-  ylabel = "Routine Emp. / Civilian Pop. (16+)",
-  title = "Per Capita Employment in Routine Jobs",
-  y_ticks = c(0.20, 0.25, 0.30, 0.35, 0.40),
-  y_lim = c(0.20, 0.40),
-  out_path = file.path(fig_dir, "figure1_routine_employment_per_capita.png"),
-  recessions = recessions
+routine_ts_sa <- merge_jk_shocks_white(
+  panel = routine_ts_sa,
+  shock_path = jk_shock_file,
+  mp_col = "MP_pm",
+  cbi_col = "CBI_pm",
+  shock_names = jk_shock_vars
 )
 
-plot_descriptive_line(
-  panel = routine_ts_fig12,
-  column = "routine_share_percent_sa",
-  ylabel = "Percent of Total Employment",
-  title = "Routine Jobs as a Share of Total Employment",
-  y_ticks = c(40, 45, 50, 55, 60, 65, 70),
-  y_lim = c(40, 70),
-  out_path = file.path(fig_dir, "figure2_routine_employment_share.png"),
-  recessions = recessions
+message(
+  "JK LP sample: ",
+  min(routine_ts_sa$date),
+  " to ",
+  max(routine_ts_sa$date),
+  " (",
+  nrow(routine_ts_sa),
+  " monthly rows before LP lag trimming)."
 )
 
 
-# 3. Linear LP estimation -------------------------------------------------
+# 2. Linear LP estimation -------------------------------------------------
 
-irf_level_total <- LP_white(
+irf_level_total <- LP_white_multi_shock(
   data = routine_ts_sa,
   H = H,
   y_var = "log_total",
-  shock_var = "eps",
+  shock_vars = jk_shock_vars,
+  shock_labels = jk_shock_labels,
   n_lags_y = n_lags_y,
   n_lags_shock = n_lags_shock,
   nw_lags = nw_lags,
@@ -86,11 +91,12 @@ irf_level_total <- LP_white(
   include_time_trend = include_time_trend
 )
 
-irf_level_routine <- LP_white(
+irf_level_routine <- LP_white_multi_shock(
   data = routine_ts_sa,
   H = H,
   y_var = "log_routine",
-  shock_var = "eps",
+  shock_vars = jk_shock_vars,
+  shock_labels = jk_shock_labels,
   n_lags_y = n_lags_y,
   n_lags_shock = n_lags_shock,
   nw_lags = nw_lags,
@@ -100,11 +106,12 @@ irf_level_routine <- LP_white(
   include_time_trend = include_time_trend
 )
 
-irf_level_nonroutine <- LP_white(
+irf_level_nonroutine <- LP_white_multi_shock(
   data = routine_ts_sa,
   H = H,
   y_var = "log_nonroutine",
-  shock_var = "eps",
+  shock_vars = jk_shock_vars,
+  shock_labels = jk_shock_labels,
   n_lags_y = n_lags_y,
   n_lags_shock = n_lags_shock,
   nw_lags = nw_lags,
@@ -114,11 +121,12 @@ irf_level_nonroutine <- LP_white(
   include_time_trend = include_time_trend
 )
 
-irf_routine_share <- LP_white(
+irf_routine_share <- LP_white_multi_shock(
   data = routine_ts_sa,
   H = H,
   y_var = "routine_share",
-  shock_var = "eps",
+  shock_vars = jk_shock_vars,
+  shock_labels = jk_shock_labels,
   n_lags_y = n_lags_y,
   n_lags_shock = n_lags_shock,
   nw_lags = nw_lags,
@@ -128,116 +136,10 @@ irf_routine_share <- LP_white(
   include_time_trend = include_time_trend
 )
 
-plot_irf_white(
-  irf_df = irf_level_total,
-  out_path = file.path(fig_dir, "irf_linear_log_total_employment.png"),
-  title = "Linear LP - log total employment",
-  ylabel = "Percent"
-)
 
-plot_irf_white(
-  irf_df = irf_level_routine,
-  out_path = file.path(fig_dir, "irf_linear_log_routine_employment.png"),
-  title = "Linear LP - log routine employment",
-  ylabel = "Percent"
-)
+# 3. Figure 3 -------------------------------------------------------------
 
-plot_irf_white(
-  irf_df = irf_level_nonroutine,
-  out_path = file.path(fig_dir, "irf_linear_log_nonroutine_employment.png"),
-  title = "Linear LP - log nonroutine employment",
-  ylabel = "Percent"
-)
-
-plot_irf_white(
-  irf_df = irf_routine_share,
-  out_path = file.path(fig_dir, "irf_linear_routine_share_of_employment.png"),
-  title = "Linear LP - routine share of employment",
-  ylabel = "% Points"
-)
-
-
-# 4. Sign-split LPs -------------------------------------------------------
-
-irf_sign_total <- LP_white_sign(
-  routine_ts_sa, H, "log_total", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_sign_routine <- LP_white_sign(
-  routine_ts_sa, H, "log_routine", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_sign_nonroutine <- LP_white_sign(
-  routine_ts_sa, H, "log_nonroutine", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_sign_share <- LP_white_sign(
-  routine_ts_sa, H, "routine_share", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-plot_irf_white(irf_sign_total[irf_sign_total$shock == "eps_plus", ], file.path(fig_dir, "irf_sign_contraction_log_total_employment.png"), "Sign-split LP - contractionary eps+ - log total employment", "Percent")
-plot_irf_white(irf_sign_total[irf_sign_total$shock == "eps_minus", ], file.path(fig_dir, "irf_sign_expansion_log_total_employment.png"), "Sign-split LP - expansionary eps- - log total employment", "Percent")
-
-plot_irf_white(irf_sign_routine[irf_sign_routine$shock == "eps_plus", ], file.path(fig_dir, "irf_sign_contraction_log_routine_employment.png"), "Sign-split LP - contractionary eps+ - log routine employment", "Percent")
-plot_irf_white(irf_sign_routine[irf_sign_routine$shock == "eps_minus", ], file.path(fig_dir, "irf_sign_expansion_log_routine_employment.png"), "Sign-split LP - expansionary eps- - log routine employment", "Percent")
-
-plot_irf_white(irf_sign_nonroutine[irf_sign_nonroutine$shock == "eps_plus", ], file.path(fig_dir, "irf_sign_contraction_log_nonroutine_employment.png"), "Sign-split LP - contractionary eps+ - log nonroutine employment", "Percent")
-plot_irf_white(irf_sign_nonroutine[irf_sign_nonroutine$shock == "eps_minus", ], file.path(fig_dir, "irf_sign_expansion_log_nonroutine_employment.png"), "Sign-split LP - expansionary eps- - log nonroutine employment", "Percent")
-
-plot_irf_white(irf_sign_share[irf_sign_share$shock == "eps_plus", ], file.path(fig_dir, "irf_sign_contraction_routine_share_of_employment.png"), "Sign-split LP - contractionary eps+ - routine share of employment", "% Points")
-plot_irf_white(irf_sign_share[irf_sign_share$shock == "eps_minus", ], file.path(fig_dir, "irf_sign_expansion_routine_share_of_employment.png"), "Sign-split LP - expansionary eps- - routine share of employment", "% Points")
-
-
-# 5. Quadratic LPs --------------------------------------------------------
-
-irf_quad_total <- LP_white_quad(
-  routine_ts_sa, H, "log_total", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_quad_routine <- LP_white_quad(
-  routine_ts_sa, H, "log_routine", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_quad_nonroutine <- LP_white_quad(
-  routine_ts_sa, H, "log_nonroutine", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-irf_quad_share <- LP_white_quad(
-  routine_ts_sa, H, "routine_share", "eps",
-  n_lags_y, n_lags_shock, nw_lags, 100, confint,
-  y_lag_transform, include_time_trend
-)
-
-plot_irf_white(irf_quad_total[irf_quad_total$shock == "+1pp", ], file.path(fig_dir, "irf_quad_contraction_log_total_employment.png"), "Quadratic LP - +1 pp shock - log total employment", "Percent")
-plot_irf_white(irf_quad_total[irf_quad_total$shock == "-1pp", ], file.path(fig_dir, "irf_quad_expansion_log_total_employment.png"), "Quadratic LP - -1 pp shock - log total employment", "Percent")
-
-plot_irf_white(irf_quad_routine[irf_quad_routine$shock == "+1pp", ], file.path(fig_dir, "irf_quad_contraction_log_routine_employment.png"), "Quadratic LP - +1 pp shock - log routine employment", "Percent")
-plot_irf_white(irf_quad_routine[irf_quad_routine$shock == "-1pp", ], file.path(fig_dir, "irf_quad_expansion_log_routine_employment.png"), "Quadratic LP - -1 pp shock - log routine employment", "Percent")
-
-plot_irf_white(irf_quad_nonroutine[irf_quad_nonroutine$shock == "+1pp", ], file.path(fig_dir, "irf_quad_contraction_log_nonroutine_employment.png"), "Quadratic LP - +1 pp shock - log nonroutine employment", "Percent")
-plot_irf_white(irf_quad_nonroutine[irf_quad_nonroutine$shock == "-1pp", ], file.path(fig_dir, "irf_quad_expansion_log_nonroutine_employment.png"), "Quadratic LP - -1 pp shock - log nonroutine employment", "Percent")
-
-plot_irf_white(irf_quad_share[irf_quad_share$shock == "+1pp", ], file.path(fig_dir, "irf_quad_contraction_routine_share_of_employment.png"), "Quadratic LP - +1 pp shock - routine share of employment", "% Points")
-plot_irf_white(irf_quad_share[irf_quad_share$shock == "-1pp", ], file.path(fig_dir, "irf_quad_expansion_routine_share_of_employment.png"), "Quadratic LP - -1 pp shock - routine share of employment", "% Points")
-
-
-# 6. Figure 3 -------------------------------------------------------------
-
-figure3_irfs_raw <- list(
+figure3_jk_irfs_raw <- list(
   log_total = irf_level_total,
   log_routine = irf_level_routine,
   log_nonroutine = irf_level_nonroutine,
@@ -245,68 +147,42 @@ figure3_irfs_raw <- list(
 )
 
 if (smooth_figure3) {
-  figure3_irfs <- lapply(
-    figure3_irfs_raw,
-    smooth_white_irf,
+  figure3_jk_irfs <- lapply(
+    figure3_jk_irfs_raw,
+    smooth_white_irf_by_shock,
     window = irf_smooth_window,
     se_floor_ratio = irf_smooth_se_floor_ratio,
     confint = confint
   )
 } else {
-  figure3_irfs <- figure3_irfs_raw
+  figure3_jk_irfs <- figure3_jk_irfs_raw
 }
 
-plot_figure3_white(
-  irf_list = figure3_irfs_raw,
-  out_path = file.path(fig_dir, "figure3_linear_occupations_unsmoothed.png")
+plot_figure3_multi_shock_white(
+  irf_list = figure3_jk_irfs_raw,
+  out_path = file.path(fig_dir, "figure3_jk_mp_cbi_occupations_unsmoothed.png"),
+  shock_labels = jk_shock_labels
 )
 
-plot_figure3_white(
-  irf_list = figure3_irfs,
-  out_path = file.path(fig_dir, "figure3_linear_occupations.png")
+plot_figure3_multi_shock_white(
+  irf_list = figure3_jk_irfs,
+  out_path = file.path(fig_dir, "figure3_jk_mp_cbi_occupations.png"),
+  shock_labels = jk_shock_labels
 )
 
-figure3_irfs_unsmoothed <- write_figure3_irf_csv(
-  raw_irfs = figure3_irfs_raw,
-  plotted_irfs = figure3_irfs_raw,
-  out_path = file.path(tab_dir, "figure3_linear_irfs_unsmoothed.csv")
+figure3_jk_irfs_unsmoothed <- write_figure3_multi_shock_irf_csv(
+  raw_irfs = figure3_jk_irfs_raw,
+  plotted_irfs = figure3_jk_irfs_raw,
+  out_path = file.path(tab_dir, "figure3_jk_mp_cbi_irfs_unsmoothed.csv")
 )
 
-figure3_irfs_df <- write_figure3_irf_csv(
-  raw_irfs = figure3_irfs_raw,
-  plotted_irfs = figure3_irfs,
-  out_path = file.path(tab_dir, "figure3_linear_irfs.csv")
-)
-
-
-# 7. FEV table ------------------------------------------------------------
-
-fev_total <- FEV_white(
-  routine_ts_sa, H, "log_total", "eps",
-  n_lags_y, n_lags_shock, y_lag_transform, include_time_trend
-)
-
-fev_routine <- FEV_white(
-  routine_ts_sa, H, "log_routine", "eps",
-  n_lags_y, n_lags_shock, y_lag_transform, include_time_trend
-)
-
-fev_nonroutine <- FEV_white(
-  routine_ts_sa, H, "log_nonroutine", "eps",
-  n_lags_y, n_lags_shock, y_lag_transform, include_time_trend
-)
-
-fev_share <- FEV_white(
-  routine_ts_sa, H, "routine_share", "eps",
-  n_lags_y, n_lags_shock, y_lag_transform, include_time_trend
-)
-
-write_fev_csv(
-  fev_rows = list(fev_total, fev_routine, fev_nonroutine, fev_share),
-  out_path = file.path(tab_dir, "fev_linear.csv")
+figure3_jk_irfs_df <- write_figure3_multi_shock_irf_csv(
+  raw_irfs = figure3_jk_irfs_raw,
+  plotted_irfs = figure3_jk_irfs,
+  out_path = file.path(tab_dir, "figure3_jk_mp_cbi_irfs.csv")
 )
 
 
-# 8. Validation -----------------------------------------------------------
+# 4. Final message --------------------------------------------------------
 
-message("Done. R outputs are under: ", normalizePath(out_dir, winslash = "/", mustWork = FALSE))
+message("Done. JK Figure 3 outputs are under: ", normalizePath(out_dir, winslash = "/", mustWork = FALSE))

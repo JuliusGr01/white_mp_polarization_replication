@@ -394,6 +394,55 @@ load_rr_shocks_white <- function(path) {
   monthly[order(monthly$date), ]
 }
 
+load_jk_shocks_white <- function(path,
+                                 mp_col = "MP_pm",
+                                 cbi_col = "CBI_pm") {
+  raw <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  required <- c("year", "month", mp_col, cbi_col)
+  missing <- setdiff(required, names(raw))
+  if (length(missing) > 0L) stop("JK shock file missing columns: ", paste(missing, collapse = ", "))
+
+  parse_num <- function(x) {
+    as.numeric(gsub(",", ".", trimws(as.character(x)), fixed = TRUE))
+  }
+
+  out <- data.frame(
+    date = as.Date(sprintf("%04d-%02d-01", as.integer(raw$year), as.integer(raw$month))),
+    MP = parse_num(raw[[mp_col]]),
+    CBI = parse_num(raw[[cbi_col]])
+  )
+  out <- out[!is.na(out$date), ]
+  out <- aggregate(cbind(MP, CBI) ~ date, out, sum, na.rm = TRUE)
+
+  full <- data.frame(date = seq(min(out$date), max(out$date), by = "month"))
+  out <- merge(full, out, by = "date", all.x = TRUE)
+  out$MP[is.na(out$MP)] <- 0
+  out$CBI[is.na(out$CBI)] <- 0
+  out[order(out$date), ]
+}
+
+merge_jk_shocks_white <- function(panel,
+                                  shock_path,
+                                  mp_col = "MP_pm",
+                                  cbi_col = "CBI_pm",
+                                  shock_names = c("MP", "CBI")) {
+  shocks <- load_jk_shocks_white(shock_path, mp_col = mp_col, cbi_col = cbi_col)
+  names(shocks)[names(shocks) == "MP"] <- shock_names[[1]]
+  names(shocks)[names(shocks) == "CBI"] <- shock_names[[2]]
+
+  panel <- merge(panel, shocks, by = "date", all.x = TRUE)
+  panel <- panel[panel$date >= min(shocks$date) & panel$date <= max(shocks$date), ]
+  panel <- panel[order(panel$date), ]
+
+  missing_shocks <- !stats::complete.cases(panel[, shock_names, drop = FALSE])
+  if (any(missing_shocks)) {
+    first_missing <- panel$date[missing_shocks][[1]]
+    stop("Missing JK shock values in merged LP panel. First missing month: ", first_missing)
+  }
+
+  panel
+}
+
 add_statsmodels_stl_sa <- function(panel) {
   tmp_in <- tempfile(fileext = ".csv")
   tmp_out <- tempfile(fileext = ".csv")
@@ -505,6 +554,24 @@ control_cols_white <- function(n_lag_y,
   cols
 }
 
+shock_lag_cols_white <- function(shock_vars, n_lags_shock) {
+  if (n_lags_shock <= 0L) return(character(0))
+  unlist(lapply(shock_vars, function(shock_var) {
+    paste0(shock_var, "_L", seq_len(n_lags_shock))
+  }), use.names = FALSE)
+}
+
+control_cols_multi_shock_white <- function(n_lag_y,
+                                           shock_vars,
+                                           n_lags_shock,
+                                           include_time_trend = FALSE) {
+  cols <- "const"
+  if (include_time_trend) cols <- c(cols, "time_trend")
+  cols <- c(cols, paste0("y_L", seq_len(n_lag_y)))
+  cols <- c(cols, shock_lag_cols_white(shock_vars, n_lags_shock))
+  cols
+}
+
 build_design_white <- function(data,
                                y_var,
                                shock_var,
@@ -535,6 +602,42 @@ build_design_white <- function(data,
   df0$eps_plus <- pmax(df0[[shock_var]], 0)
   df0$eps_minus <- pmin(df0[[shock_var]], 0)
   df0$eps_sq <- df0[[shock_var]]^2
+
+  df0
+}
+
+build_design_multi_shock_white <- function(data,
+                                           y_var,
+                                           shock_vars,
+                                           n_lag_y,
+                                           n_lags_shock,
+                                           y_lag_transform = "diff",
+                                           include_time_trend = FALSE) {
+  required <- c("date", y_var, shock_vars)
+  missing <- setdiff(required, names(data))
+  if (length(missing) > 0L) stop("LP data missing columns: ", paste(missing, collapse = ", "))
+
+  df0 <- data[order(data$date), ]
+  df0$const <- 1
+  if (include_time_trend) df0$time_trend <- seq_len(nrow(df0)) - 1
+
+  if (identical(y_lag_transform, "level")) {
+    y_lag_source <- df0[[y_var]]
+  } else if (identical(y_lag_transform, "diff")) {
+    y_lag_source <- c(NA_real_, diff(df0[[y_var]]))
+  } else {
+    stop("Unsupported y_lag_transform: ", y_lag_transform)
+  }
+
+  for (L in seq_len(n_lag_y)) {
+    df0[[paste0("y_L", L)]] <- lag_vec(y_lag_source, L)
+  }
+
+  for (shock_var in shock_vars) {
+    for (L in seq_len(n_lags_shock)) {
+      df0[[paste0(shock_var, "_L", L)]] <- lag_vec(df0[[shock_var]], L)
+    }
+  }
 
   df0
 }
@@ -634,6 +737,63 @@ LP_white <- function(data,
       conf_low_raw = estimate - confint * se,
       conf_high_raw = estimate + confint * se
     )
+  }
+
+  do.call(rbind, out)
+}
+
+LP_white_multi_shock <- function(data,
+                                 H = 48L,
+                                 y_var,
+                                 shock_vars,
+                                 shock_labels = NULL,
+                                 n_lags_y = 12L,
+                                 n_lags_shock = 12L,
+                                 nw_lags = 12L,
+                                 scale = 1,
+                                 confint = 1.645,
+                                 y_lag_transform = "diff",
+                                 include_time_trend = FALSE) {
+  if (is.null(shock_labels)) shock_labels <- shock_vars
+  if (is.null(names(shock_labels))) names(shock_labels) <- shock_vars
+
+  df0 <- build_design_multi_shock_white(
+    data = data,
+    y_var = y_var,
+    shock_vars = shock_vars,
+    n_lag_y = n_lags_y,
+    n_lags_shock = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
+  )
+
+  horizons <- seq_len(H)
+  x_cols <- c(
+    control_cols_multi_shock_white(n_lags_y, shock_vars, n_lags_shock, include_time_trend),
+    shock_vars
+  )
+
+  out <- list()
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit <- fit_ols_hac_white(dy_h, df0[, x_cols, drop = FALSE], maxlags = nw_lags)
+
+    for (shock_var in shock_vars) {
+      estimate <- unname(fit$coef[[shock_var]]) * scale
+      se <- unname(fit$se[[shock_var]]) * scale
+
+      out[[length(out) + 1L]] <- data.frame(
+        outcome = y_var,
+        shock = shock_var,
+        shock_label = unname(shock_labels[[shock_var]]),
+        h = h_val,
+        estimate_raw = estimate,
+        se = se,
+        conf_low_raw = estimate - confint * se,
+        conf_high_raw = estimate + confint * se
+      )
+    }
   }
 
   do.call(rbind, out)
@@ -828,6 +988,25 @@ smooth_white_irf <- function(irf_df,
   out
 }
 
+smooth_white_irf_by_shock <- function(irf_df,
+                                      window = 7L,
+                                      se_floor_ratio = 0.85,
+                                      confint = 1.645) {
+  if (!"shock" %in% names(irf_df)) {
+    return(smooth_white_irf(irf_df, window = window, se_floor_ratio = se_floor_ratio, confint = confint))
+  }
+
+  shock_levels <- unique(irf_df$shock)
+  pieces <- split(irf_df, factor(irf_df$shock, levels = shock_levels))
+  out <- do.call(rbind, lapply(pieces, smooth_white_irf,
+    window = window,
+    se_floor_ratio = se_floor_ratio,
+    confint = confint
+  ))
+  row.names(out) <- NULL
+  out[order(match(out$shock, shock_levels), out$h), ]
+}
+
 write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
   rows <- list()
 
@@ -843,6 +1022,44 @@ write_figure3_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
       coef_plotted = plotted$estimate_raw,
       se_plotted = plotted$se
     )
+  }
+
+  out <- do.call(rbind, rows)
+  row.names(out) <- NULL
+  write_white_csv(out, out_path)
+  out
+}
+
+write_figure3_multi_shock_irf_csv <- function(raw_irfs, plotted_irfs, out_path) {
+  rows <- list()
+
+  for (nm in names(raw_irfs)) {
+    raw <- raw_irfs[[nm]]
+    plotted <- plotted_irfs[[nm]]
+    shock_levels <- unique(raw$shock)
+
+    for (shock in shock_levels) {
+      raw_s <- raw[raw$shock == shock, ]
+      raw_s <- raw_s[order(raw_s$h), ]
+      plotted_s <- plotted[plotted$shock == shock, ]
+      plotted_s <- plotted_s[order(plotted_s$h), ]
+
+      label <- shock
+      if ("shock_label" %in% names(raw_s) && nrow(raw_s) > 0L) {
+        label <- raw_s$shock_label[[1]]
+      }
+
+      rows[[paste(nm, shock, sep = "_")]] <- data.frame(
+        outcome = nm,
+        shock = shock,
+        shock_label = label,
+        horizon = raw_s$h,
+        coef_raw = raw_s$estimate_raw,
+        se_raw = raw_s$se,
+        coef_plotted = plotted_s$estimate_raw,
+        se_plotted = plotted_s$se
+      )
+    }
   }
 
   out <- do.call(rbind, rows)
@@ -927,6 +1144,76 @@ plot_figure3_white <- function(irf_list, out_path) {
     lines(h, estimate, col = "black", lwd = 2)
     abline(h = 0, col = "grey30", lty = "dotted")
     axis(1, at = c(0, 12, 24, 36, 48))
+  }
+
+  dev.off()
+}
+
+plot_figure3_multi_shock_white <- function(irf_list,
+                                           out_path,
+                                           shock_labels = c(MP = "MP", CBI = "CBI"),
+                                           shock_colors = c(MP = "black", CBI = "firebrick3"),
+                                           shock_ltys = c(MP = 1, CBI = 2)) {
+  panels <- list(
+    list(key = "log_routine", title = "Routine Employment", ylabel = "Percent", ylim = c(-3, 1)),
+    list(key = "log_nonroutine", title = "Nonroutine Employment", ylabel = "Percent", ylim = c(-3, 1)),
+    list(key = "routine_share", title = "Routine Share", ylabel = "% Points", ylim = c(-1, 0.5)),
+    list(key = "log_total", title = "Total Employment", ylabel = "Percent", ylim = c(-3, 1))
+  )
+
+  shock_order <- names(shock_labels)
+  if (is.null(shock_order)) shock_order <- unique(irf_list[[1]]$shock)
+
+  png(out_path, width = 1600, height = 1160, res = 200)
+  par(family = "serif", mfrow = c(2, 2), mar = c(4.2, 4.4, 3.2, 1.0))
+
+  for (i in seq_along(panels)) {
+    p <- panels[[i]]
+    irf_df <- irf_list[[p$key]]
+    panel_values <- c(0, irf_df$estimate_raw)
+    ylim <- range(c(p$ylim, panel_values), finite = TRUE)
+    pad <- diff(ylim) * 0.06
+    if (!is.finite(pad) || pad == 0) pad <- 0.1
+    ylim <- ylim + c(-pad, pad)
+
+    plot(
+      c(0, 48),
+      c(0, 0),
+      type = "n",
+      xlab = "Months",
+      ylab = p$ylabel,
+      main = p$title,
+      xlim = c(0, 48),
+      ylim = ylim,
+      xaxt = "n"
+    )
+    abline(h = 0, col = "grey30", lty = "dotted")
+    axis(1, at = c(0, 12, 24, 36, 48))
+
+    for (shock in shock_order) {
+      shock_df <- irf_df[irf_df$shock == shock, ]
+      shock_df <- shock_df[order(shock_df$h), ]
+      h <- c(0, shock_df$h)
+      estimate <- c(0, shock_df$estimate_raw)
+      lines(
+        h,
+        estimate,
+        col = unname(shock_colors[[shock]]),
+        lty = unname(shock_ltys[[shock]]),
+        lwd = 2
+      )
+    }
+
+    if (i == 1L) {
+      legend(
+        "topleft",
+        legend = unname(shock_labels[shock_order]),
+        col = unname(shock_colors[shock_order]),
+        lty = unname(shock_ltys[shock_order]),
+        lwd = 2,
+        bty = "n"
+      )
+    }
   }
 
   dev.off()
