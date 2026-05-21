@@ -1,0 +1,32 @@
+Consistent occupation crosswalk files (occ8090.zip)
+
+Contains:
+	dot77-6070-gen.dta
+	dot77-6070.dta
+	dot77-70-gen.dta
+	dot77-70.dta
+	dot77-8090-gen.dta
+	dot77-8090.dta
+	dot91-6070-gen.dta
+	dot91-6070.dta
+	dot91-70-gen.dta
+	dot91-70.dta
+	dot91-8090-gen.dta
+	dot91-8090.dta
+	DOT-occ-data-sets.txt
+
+How to read the file names:
+The prefix (dot77, dot91) - the variables are from the 1977 4th edition or 1991 revised 4th edition of the DOT.
+The subsequent number (6070, 70, 8090) - the set of occupation codes these are aggregated to.
+	6070 - the 1960-70 crosswalk aggregation
+	70 - the 1970 occupation codes
+	8090 - the 1980 and 1990 codes (which are almost identical)
+The suffix (gen) - the variables are coded by gender. Otherwise, they are weighted averages of males and females.
+
+DOT task measure variables (see ALM Appendix Table 1):
+	ehf - Nonroutine manual
+	finger - Routine manual
+	dcp - Non-routine cognitive/interactive
+	sts - Routine cognitive
+	math - Non-routine cognitive/analytical
+	Each DOT variable is coded on a continuous scale from 0 to 10, where higher numbers refer to more of the task.

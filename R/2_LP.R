@@ -18,6 +18,9 @@ confint <- 1.645
 y_lag_transform <- "diff"
 include_time_trend <- FALSE
 
+early_shock_start <- NULL
+early_shock_end <- as.Date("1989-12-01")
+
 recessions <- data.frame(
   start = as.Date(c(
     "1969-12-01", "1973-11-01", "1980-01-01", "1981-07-01",
@@ -267,7 +270,119 @@ figure3_irfs_df <- write_figure3_irf_csv(
 )
 
 
-# 7. FEV table ------------------------------------------------------------
+# 7. Early-shock Figure 3 -------------------------------------------------
+
+# This keeps shocks/events only through 1989, but retains the outcome data
+# needed to estimate 48-month responses to those shocks.
+
+early_shock_start_actual <- if (is.null(early_shock_start)) {
+  min(routine_ts_sa$date[!is.na(routine_ts_sa$eps)], na.rm = TRUE)
+} else {
+  early_shock_start
+}
+early_outcome_end <- seq(early_shock_end, by = "month", length.out = H + 1L)[[H + 1L]]
+
+if (max(routine_ts_sa$date, na.rm = TRUE) < early_outcome_end) {
+  stop("Early-shock exercise needs outcome data through ", early_outcome_end,
+       " for H = ", H, ", but the LP panel ends at ", max(routine_ts_sa$date, na.rm = TRUE), ".")
+}
+
+routine_ts_sa_early <- routine_ts_sa[routine_ts_sa$date <= early_outcome_end, ]
+routine_ts_sa_early <- routine_ts_sa_early[order(routine_ts_sa_early$date), ]
+
+message(
+  "Early-shock LP event sample: ",
+  early_shock_start_actual,
+  " to ",
+  early_shock_end,
+  "; outcome panel retained through ",
+  early_outcome_end,
+  "."
+)
+
+irf_early_total <- LP_white_event_window(
+  data = routine_ts_sa_early,
+  H = H,
+  y_var = "log_total",
+  shock_var = "eps",
+  shock_start = early_shock_start_actual,
+  shock_end = early_shock_end,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_early_routine <- LP_white_event_window(
+  data = routine_ts_sa_early,
+  H = H,
+  y_var = "log_routine",
+  shock_var = "eps",
+  shock_start = early_shock_start_actual,
+  shock_end = early_shock_end,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_early_nonroutine <- LP_white_event_window(
+  data = routine_ts_sa_early,
+  H = H,
+  y_var = "log_nonroutine",
+  shock_var = "eps",
+  shock_start = early_shock_start_actual,
+  shock_end = early_shock_end,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_early_share <- LP_white_event_window(
+  data = routine_ts_sa_early,
+  H = H,
+  y_var = "routine_share",
+  shock_var = "eps",
+  shock_start = early_shock_start_actual,
+  shock_end = early_shock_end,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+figure3_early_irfs <- list(
+  log_total = irf_early_total,
+  log_routine = irf_early_routine,
+  log_nonroutine = irf_early_nonroutine,
+  routine_share = irf_early_share
+)
+
+plot_figure3_white(
+  irf_list = figure3_early_irfs,
+  out_path = file.path(fig_dir, "figure3_linear_occupations_early_shocks_through_1989.png")
+)
+
+figure3_early_irfs_df <- write_figure3_irf_csv(
+  irfs = figure3_early_irfs,
+  out_path = file.path(tab_dir, "figure3_linear_irfs_early_shocks_through_1989.csv")
+)
+
+
+# 8. FEV table ------------------------------------------------------------
 
 fev_total <- FEV_white(
   routine_ts_sa, H, "log_total", "eps",

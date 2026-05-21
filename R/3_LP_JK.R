@@ -47,7 +47,32 @@ if (!exists("tab_dir")) tab_dir <- out_dir
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(tab_dir, recursive = TRUE, showWarnings = FALSE)
 
-if (!exists("read_white_csv")) source("functions.R")
+required_helpers <- c(
+  "read_white_csv",
+  "load_jk_shocks_white",
+  "merge_jk_shocks_white",
+  "build_white_lp_outcome_panel_from_extended",
+  "LP_white_multi_shock",
+  "LP_white_shock_comparison",
+  "LP_white_shock_comparison_event_window",
+  "plot_figure3_multi_shock_white",
+  "write_figure3_multi_shock_irf_csv"
+)
+if (!all(vapply(required_helpers, exists, logical(1)))) source("functions.R")
+
+missing_helpers <- required_helpers[!vapply(required_helpers, exists, logical(1))]
+if (length(missing_helpers) > 0L) {
+  stop("Missing required helper(s) after sourcing functions.R: ", paste(missing_helpers, collapse = ", "))
+}
+
+latest_event_end_with_leads <- function(shock_dates, outcome_end, H) {
+  shock_dates <- sort(unique(as.Date(shock_dates)))
+  has_lead <- vapply(shock_dates, function(date) {
+    seq(date, by = "month", length.out = H + 1L)[[H + 1L]] <= outcome_end
+  }, logical(1))
+  if (!any(has_lead)) stop("No shock dates have ", H, " months of outcome data available.")
+  max(shock_dates[has_lead])
+}
 
 
 # 1. Data import ----------------------------------------------------------
@@ -55,11 +80,17 @@ if (!exists("read_white_csv")) source("functions.R")
 lp_panel_file <- file.path(input_dir, "employment_monthly_white_lp.csv")
 lp_reference <- file.path(ref_dir, "python_employment_monthly_white_lp.csv")
 jk_shock_file <- file.path(input_dir, "shocks_fed_jk_m.csv")
+extended_panel_file <- file.path(input_dir, "employment_monthly_extended.csv")
+bls_raw_all_data <- file.path(input_dir, "bls_raw", "ln.data.1.AllData")
+rr_shock_file <- file.path(input_dir, "RR_MPshocks_Updated(GBforecasts).csv")
 
 if (!file.exists(lp_panel_file) && !file.exists(lp_reference)) {
   stop("Missing LP panel. Run 1_Data.R or provide reference file: ", lp_reference)
 }
 if (!file.exists(jk_shock_file)) stop("Missing JK shock file: ", jk_shock_file)
+if (!file.exists(extended_panel_file)) stop("Missing extended employment panel: ", extended_panel_file)
+if (!file.exists(bls_raw_all_data)) stop("Missing BLS raw file: ", bls_raw_all_data)
+if (!file.exists(rr_shock_file)) stop("Missing Romer-Romer shock file: ", rr_shock_file)
 
 if (file.exists(lp_panel_file)) {
   routine_ts_sa <- read_white_csv(lp_panel_file)
@@ -286,6 +317,150 @@ figure3_comparison_irfs_df <- write_figure3_multi_shock_irf_csv(
 )
 
 
-# 5. Final message --------------------------------------------------------
+# 5. Longest-available shock comparison ----------------------------------
+
+# Build the same White-style outcome definitions as the main LP panel, but
+# without the 2008 endpoint, so post-shock observations can identify long
+# horizons for the latest feasible shock events.
+
+extended_panel <- read_white_csv(extended_panel_file)
+extended_panel$date <- as.Date(extended_panel$date)
+
+long_outcome_panel <- build_white_lp_outcome_panel_from_extended(
+  extended_panel = extended_panel,
+  bls_raw_path = bls_raw_all_data
+)
+long_outcome_end <- max(long_outcome_panel$date, na.rm = TRUE)
+
+rr_shocks_long <- load_rr_shocks_white(rr_shock_file)
+names(rr_shocks_long)[names(rr_shocks_long) == "shock"] <- "eps"
+
+jk_shocks_long <- load_jk_shocks_white(
+  path = jk_shock_file,
+  mp_col = "MP_pm",
+  cbi_col = "CBI_pm",
+  pc1_col = "pc1_hf"
+)
+
+rr_long_end <- latest_event_end_with_leads(rr_shocks_long$date, long_outcome_end, H)
+jk_long_end <- latest_event_end_with_leads(jk_shocks_long$date, long_outcome_end, H)
+
+longest_shock_windows <- data.frame(
+  shock = comparison_shock_vars,
+  start = as.Date(c(
+    min(rr_shocks_long$date, na.rm = TRUE),
+    rep(min(jk_shocks_long$date, na.rm = TRUE), 3L)
+  )),
+  end = as.Date(c(rr_long_end, rep(jk_long_end, 3L)))
+)
+
+longest_panel <- merge(long_outcome_panel, rr_shocks_long, by = "date", all.x = TRUE)
+longest_panel <- merge(longest_panel, jk_shocks_long, by = "date", all.x = TRUE)
+longest_panel <- longest_panel[order(longest_panel$date), ]
+
+message(
+  "Longest-available outcome panel: ",
+  min(longest_panel$date),
+  " to ",
+  max(longest_panel$date),
+  ". RR shocks: ",
+  longest_shock_windows$start[longest_shock_windows$shock == "eps"],
+  " to ",
+  longest_shock_windows$end[longest_shock_windows$shock == "eps"],
+  "; JK shocks: ",
+  longest_shock_windows$start[longest_shock_windows$shock == "MP"],
+  " to ",
+  longest_shock_windows$end[longest_shock_windows$shock == "MP"],
+  "."
+)
+
+irf_longest_total <- LP_white_shock_comparison_event_window(
+  data = longest_panel,
+  H = H,
+  y_var = "log_total",
+  shock_vars = comparison_shock_vars,
+  shock_windows = longest_shock_windows,
+  shock_labels = comparison_shock_labels,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_longest_routine <- LP_white_shock_comparison_event_window(
+  data = longest_panel,
+  H = H,
+  y_var = "log_routine",
+  shock_vars = comparison_shock_vars,
+  shock_windows = longest_shock_windows,
+  shock_labels = comparison_shock_labels,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_longest_nonroutine <- LP_white_shock_comparison_event_window(
+  data = longest_panel,
+  H = H,
+  y_var = "log_nonroutine",
+  shock_vars = comparison_shock_vars,
+  shock_windows = longest_shock_windows,
+  shock_labels = comparison_shock_labels,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+irf_longest_share <- LP_white_shock_comparison_event_window(
+  data = longest_panel,
+  H = H,
+  y_var = "routine_share",
+  shock_vars = comparison_shock_vars,
+  shock_windows = longest_shock_windows,
+  shock_labels = comparison_shock_labels,
+  n_lags_y = n_lags_y,
+  n_lags_shock = n_lags_shock,
+  nw_lags = nw_lags,
+  scale = 100,
+  confint = confint,
+  y_lag_transform = y_lag_transform,
+  include_time_trend = include_time_trend
+)
+
+figure3_longest_irfs <- list(
+  log_total = irf_longest_total,
+  log_routine = irf_longest_routine,
+  log_nonroutine = irf_longest_nonroutine,
+  routine_share = irf_longest_share
+)
+
+plot_figure3_multi_shock_white(
+  irf_list = figure3_longest_irfs,
+  out_path = file.path(fig_dir, "figure3_shock_comparison_longest_available.png"),
+  shock_labels = comparison_shock_labels,
+  shock_colors = comparison_shock_colors,
+  shock_ltys = comparison_shock_ltys,
+  legend_position = "topright",
+  show_conf_bands = TRUE
+)
+
+figure3_longest_irfs_df <- write_figure3_multi_shock_irf_csv(
+  irfs = figure3_longest_irfs,
+  out_path = file.path(tab_dir, "figure3_shock_comparison_longest_available_irfs.csv")
+)
+
+
+# 6. Final message --------------------------------------------------------
 
 message("Done. JK Figure 3 outputs are under: ", normalizePath(out_dir, winslash = "/", mustWork = FALSE))

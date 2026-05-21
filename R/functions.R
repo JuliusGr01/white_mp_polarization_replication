@@ -519,6 +519,40 @@ build_white_lp_panel_from_raw <- function(extended_panel,
   panel
 }
 
+build_white_lp_outcome_panel_from_extended <- function(extended_panel,
+                                                       bls_raw_path,
+                                                       start_date = as.Date("1969-01-01"),
+                                                       end_date = NULL) {
+  panel <- extended_panel
+  panel$date <- as.Date(panel$date)
+  if (is.null(end_date)) end_date <- max(panel$date, na.rm = TRUE)
+  panel <- panel[panel$date >= start_date & panel$date <= end_date, ]
+  panel <- panel[order(panel$date), ]
+  panel <- add_statsmodels_stl_sa(panel)
+
+  total_nonag <- load_bls_series_from_raw("LNS12032187", bls_raw_path)
+  names(total_nonag)[names(total_nonag) == "value"] <- "total_nonag_employment_thousands"
+  total_nonag$total_nonag_emp <- total_nonag$total_nonag_employment_thousands * 1000
+  panel <- merge(panel, total_nonag[, c("date", "total_nonag_emp")], by = "date", all.x = TRUE)
+  panel <- panel[order(panel$date), ]
+  if (any(is.na(panel$total_nonag_emp))) stop("Missing BLS nonagricultural employment in long LP outcome panel.")
+
+  panel$routine_share <- panel$routine_share_sa
+  panel$total_emp <- panel$total_nonag_emp
+  panel$routine_emp <- panel$routine_share * panel$total_emp
+  panel$nonroutine_emp <- (1 - panel$routine_share) * panel$total_emp
+  panel$log_total <- log(panel$total_emp)
+  panel$log_routine <- log(panel$routine_emp)
+  panel$log_nonroutine <- log(panel$nonroutine_emp)
+
+  panel[, c(
+    "date", "routine_emp", "nonroutine_emp", "total_emp", "routine_share",
+    "log_total", "log_routine", "log_nonroutine",
+    "routine_emp_sa", "nonroutine_emp_sa", "total_emp_sa", "routine_share_sa",
+    "log_total_sa", "log_routine_sa", "log_nonroutine_sa", "total_nonag_emp"
+  )]
+}
+
 validate_panel_against_reference <- function(built_path,
                                              reference_path,
                                              out_path) {
@@ -746,6 +780,65 @@ LP_white <- function(data,
   do.call(rbind, out)
 }
 
+LP_white_event_window <- function(data,
+                                  H = 48L,
+                                  y_var,
+                                  shock_var = "eps",
+                                  shock_start = NULL,
+                                  shock_end = NULL,
+                                  n_lags_y = 12L,
+                                  n_lags_shock = 12L,
+                                  nw_lags = 12L,
+                                  scale = 1,
+                                  confint = 1.645,
+                                  y_lag_transform = "diff",
+                                  include_time_trend = FALSE) {
+  df0 <- build_design_white(
+    data = data,
+    y_var = y_var,
+    shock_var = shock_var,
+    n_lag_y = n_lags_y,
+    n_lag_eps = n_lags_shock,
+    y_lag_transform = y_lag_transform,
+    include_time_trend = include_time_trend
+  )
+
+  event_window <- rep(TRUE, nrow(df0))
+  if (!is.null(shock_start)) event_window <- event_window & df0$date >= shock_start
+  if (!is.null(shock_end)) event_window <- event_window & df0$date <= shock_end
+
+  horizons <- seq_len(H)
+  x_cols <- c(
+    control_cols_white(n_lags_y, n_lags_shock, include_time_trend),
+    shock_var
+  )
+
+  out <- vector("list", H)
+
+  for (h_val in horizons) {
+    dy_h <- lead_vec(df0[[y_var]], h_val) - df0[[y_var]]
+    fit <- fit_ols_hac_white(
+      dy_h[event_window],
+      df0[event_window, x_cols, drop = FALSE],
+      maxlags = nw_lags
+    )
+
+    estimate <- unname(fit$coef[[shock_var]]) * scale
+    se <- unname(fit$se[[shock_var]]) * scale
+
+    out[[h_val]] <- data.frame(
+      outcome = y_var,
+      h = h_val,
+      estimate_raw = estimate,
+      se = se,
+      conf_low_raw = estimate - confint * se,
+      conf_high_raw = estimate + confint * se
+    )
+  }
+
+  do.call(rbind, out)
+}
+
 LP_white_multi_shock <- function(data,
                                  H = 48L,
                                  y_var,
@@ -837,6 +930,62 @@ LP_white_shock_comparison <- function(data,
     irf$shock_label <- unname(shock_labels[[shock_var]])
     irf[, c(
       "outcome", "shock", "shock_label", "h",
+      "estimate_raw", "se", "conf_low_raw", "conf_high_raw"
+    )]
+  })
+
+  out <- do.call(rbind, pieces)
+  row.names(out) <- NULL
+  out
+}
+
+LP_white_shock_comparison_event_window <- function(data,
+                                                   H = 48L,
+                                                   y_var,
+                                                   shock_vars,
+                                                   shock_windows,
+                                                   shock_labels = NULL,
+                                                   n_lags_y = 12L,
+                                                   n_lags_shock = 12L,
+                                                   nw_lags = 12L,
+                                                   scale = 1,
+                                                   confint = 1.645,
+                                                   y_lag_transform = "diff",
+                                                   include_time_trend = FALSE) {
+  if (is.null(shock_labels)) shock_labels <- shock_vars
+  if (is.null(names(shock_labels))) names(shock_labels) <- shock_vars
+  required_window_cols <- c("shock", "start", "end")
+  missing_window_cols <- setdiff(required_window_cols, names(shock_windows))
+  if (length(missing_window_cols) > 0L) {
+    stop("shock_windows missing columns: ", paste(missing_window_cols, collapse = ", "))
+  }
+
+  pieces <- lapply(shock_vars, function(shock_var) {
+    window_row <- shock_windows[shock_windows$shock == shock_var, ]
+    if (nrow(window_row) != 1L) stop("Expected exactly one shock window for: ", shock_var)
+
+    irf <- LP_white_event_window(
+      data = data,
+      H = H,
+      y_var = y_var,
+      shock_var = shock_var,
+      shock_start = window_row$start[[1]],
+      shock_end = window_row$end[[1]],
+      n_lags_y = n_lags_y,
+      n_lags_shock = n_lags_shock,
+      nw_lags = nw_lags,
+      scale = scale,
+      confint = confint,
+      y_lag_transform = y_lag_transform,
+      include_time_trend = include_time_trend
+    )
+
+    irf$shock <- shock_var
+    irf$shock_label <- unname(shock_labels[[shock_var]])
+    irf$shock_start <- window_row$start[[1]]
+    irf$shock_end <- window_row$end[[1]]
+    irf[, c(
+      "outcome", "shock", "shock_label", "shock_start", "shock_end", "h",
       "estimate_raw", "se", "conf_low_raw", "conf_high_raw"
     )]
   })
@@ -1039,7 +1188,7 @@ write_figure3_multi_shock_irf_csv <- function(irfs, out_path) {
         label <- irf_s$shock_label[[1]]
       }
 
-      rows[[paste(nm, shock, sep = "_")]] <- data.frame(
+      row <- data.frame(
         outcome = nm,
         shock = shock,
         shock_label = label,
@@ -1049,6 +1198,12 @@ write_figure3_multi_shock_irf_csv <- function(irfs, out_path) {
         conf_low = irf_s$conf_low_raw,
         conf_high = irf_s$conf_high_raw
       )
+      if (all(c("shock_start", "shock_end") %in% names(irf_s))) {
+        row$shock_start <- irf_s$shock_start
+        row$shock_end <- irf_s$shock_end
+      }
+
+      rows[[paste(nm, shock, sep = "_")]] <- row
     }
   }
 
@@ -1144,7 +1299,9 @@ plot_figure3_multi_shock_white <- function(irf_list,
                                            shock_labels = c(MP = "MP", CBI = "CBI"),
                                            shock_colors = c(MP = "black", CBI = "firebrick3"),
                                            shock_ltys = c(MP = 1, CBI = 2),
-                                           legend_position = "topleft") {
+                                           legend_position = "topleft",
+                                           show_conf_bands = FALSE,
+                                           band_alpha = 0.14) {
   panels <- list(
     list(key = "log_routine", title = "Routine Employment", ylabel = "Percent", ylim = c(-3, 1)),
     list(key = "log_nonroutine", title = "Nonroutine Employment", ylabel = "Percent", ylim = c(-3, 1)),
@@ -1162,6 +1319,9 @@ plot_figure3_multi_shock_white <- function(irf_list,
     p <- panels[[i]]
     irf_df <- irf_list[[p$key]]
     panel_values <- c(0, irf_df$estimate_raw)
+    if (show_conf_bands && all(c("conf_low_raw", "conf_high_raw") %in% names(irf_df))) {
+      panel_values <- c(panel_values, irf_df$conf_low_raw, irf_df$conf_high_raw)
+    }
     ylim <- range(c(p$ylim, panel_values), finite = TRUE)
     pad <- diff(ylim) * 0.06
     if (!is.finite(pad) || pad == 0) pad <- 0.1
@@ -1180,6 +1340,24 @@ plot_figure3_multi_shock_white <- function(irf_list,
     )
     abline(h = 0, col = "grey30", lty = "dotted")
     axis(1, at = c(0, 12, 24, 36, 48))
+
+    for (shock in shock_order) {
+      shock_df <- irf_df[irf_df$shock == shock, ]
+      shock_df <- shock_df[order(shock_df$h), ]
+      h <- c(0, shock_df$h)
+      shock_color <- unname(shock_colors[[shock]])
+
+      if (show_conf_bands && all(c("conf_low_raw", "conf_high_raw") %in% names(shock_df))) {
+        conf_low <- c(0, shock_df$conf_low_raw)
+        conf_high <- c(0, shock_df$conf_high_raw)
+        polygon(
+          c(h, rev(h)),
+          c(conf_low, rev(conf_high)),
+          col = grDevices::adjustcolor(shock_color, alpha.f = band_alpha),
+          border = NA
+        )
+      }
+    }
 
     for (shock in shock_order) {
       shock_df <- irf_df[irf_df$shock == shock, ]
